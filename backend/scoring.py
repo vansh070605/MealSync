@@ -1,100 +1,73 @@
-import joblib
 import pandas as pd
 import numpy as np
 from sqlalchemy.orm import Session
-from models import Meal, Satisfaction, User
+from models import Meal, User
 
-MODEL_PATH = "meal_scoring_pipeline.joblib"
-try:
-    model = joblib.load(MODEL_PATH)
-except:
-    model = None
-
-def get_recommendations(db: Session, available_ingredients=None, max_prep_time=60, budget_tier=2, mood="normal"):
+def get_recommendations(db: Session, available_ingredients: list, max_prep_time: int, budget_tier: int, mood: str):
     meals = db.query(Meal).all()
     users = db.query(User).all()
     
     if not meals or not users:
         return []
 
-    meal_scores = []
+    available_set = {i.lower().strip() for i in available_ingredients}
     
-    # Calculate fairness weights
-    fairness_weights = {u.id: 1.0 for u in users}
-    for user in users:
-        recent_sats = db.query(Satisfaction).filter(Satisfaction.user_id == user.id).order_by(Satisfaction.id.desc()).limit(5).all()
-        if recent_sats:
-            avg_sat = sum(s.score for s in recent_sats) / len(recent_sats)
-            fairness_weights[user.id] = 1.0 + (1.0 - avg_sat)
-
-    available_set = {i.lower().strip() for i in (available_ingredients or [])}
-
+    meal_scores = []
     for meal in meals:
-        # 1. Soft Constraints (Time - relaxed)
-        if meal.prep_time > max_prep_time + 30:
+        # 1. Base Score from Prep Time & Budget
+        # We allow a 15 min buffer for flexibility
+        if meal.prep_time > (max_prep_time + 15):
             continue
             
-        # 2. Ingredient Logic (Soft matching for multiple results)
-        matched_items = []
-        feasibility_multiplier = 1.0
+        # 2. Feasibility Score (Ingredient Match)
+        meal_ingredients = {i.lower().strip() for i in meal.ingredients}
+        matches = meal_ingredients.intersection(available_set)
         
-        if available_set:
-            meal_ingredients_raw = meal.ingredients
-            meal_text = " ".join(meal_ingredients_raw).lower()
-            matched_items = [i for i in available_set if i in meal_text]
-            
-            if matched_items:
-                # Give a big boost for matches to rank them at the top
-                coverage = len(matched_items) / len(available_set)
-                feasibility_multiplier = 1.5 + (coverage * 3.0)
-            else:
-                # No match? Keep it in the list but with a penalty (0.5x)
-                feasibility_multiplier = 0.5
-        
-        # 3. ML Inference
-        user_satisfactions = []
-        for user in users:
-            if model:
-                u_id_str = f"U{user.id:03d}"
-                m_id_str = f"M{meal.id:03d}"
-                
-                features = pd.DataFrame([{
-                    "user_id": u_id_str,
-                    "meal_id": m_id_str,
-                    "prep_time_mins": meal.prep_time,
-                    "ingredient_count": len(meal.ingredients),
-                    "spice_level": 3,
-                    "is_veg": 1,
-                    "budget_tier": int(meal.cost_estimate / 5) or 1
-                }])
-                pred_score = model.predict(features)[0]
-            else:
-                pred_score = 5.0
-            
-            weighted_score = pred_score * fairness_weights.get(user.id, 1.0)
-            user_satisfactions.append(weighted_score)
+        # Soft-matching: Even if 0 matches, we allow it but with a penalty
+        feasibility = (len(matches) / len(meal_ingredients)) if meal_ingredients else 0
+        feasibility_multiplier = 0.3 + (feasibility * 0.7) # Min 0.3 multiplier even with 0 ingredients
 
-        avg_score = sum(user_satisfactions) / len(user_satisfactions)
-        min_score = min(user_satisfactions)
+        # 3. Group Harmony Score
+        # We calculate how much the 6 flatmates will like this
+        user_scores = []
+        for user in users:
+            score = 70 # Start with a neutral high base
+            
+            # Boost if they like ingredients or tags
+            user_likes = {l.lower() for l in user.likes}
+            if any(ing in user_likes for ing in meal_ingredients):
+                score += 15
+            
+            # Penalize if they dislike ingredients
+            user_dislikes = {d.lower() for d in user.dislikes}
+            if any(ing in user_dislikes for ing in meal_ingredients):
+                score -= 40
+            
+            # Spice Preference (Tolerance vs Dish Level)
+            # meal.spice_level is assumed to be 1-5
+            # user.spice_tolerance is 1-5
+            spice_diff = abs(meal.prep_time % 5 - user.spice_tolerance) # Using prep_time as proxy for spice if missing
+            score -= (spice_diff * 5)
+            
+            user_scores.append(max(0, min(100, score)))
+
+        # Fairness Logic: Weighted Average + Respecting the "Veto" (minimum score)
+        avg_score = sum(user_scores) / len(user_scores)
+        min_score = min(user_scores)
         
+        # A meal is only "Harmonious" if even the person who likes it least still finds it 'Okay'
         harmony_score = (avg_score * 0.6 + min_score * 0.4) * feasibility_multiplier
-        
-        # Explanation
-        if matched_items:
-            ing_text = ", ".join([i.capitalize() for i in matched_items])
-            explanation = f"Matches your {ing_text}. High group harmony!"
-        else:
-            explanation = "A balanced household favorite based on group tastes."
 
         meal_scores.append({
             "meal_id": meal.id,
             "name": meal.name,
-            "score": round(min(harmony_score * 10, 99), 1),
+            "score": round(harmony_score),
             "prep_time": meal.prep_time,
+            "budget_tier": int(meal.cost_estimate / 5) or 1,
             "ingredients": meal.ingredients,
-            "explanation": explanation,
-            "budget_tier": int(meal.cost_estimate / 5) or 1
+            "explanation": f"Matches {len(matches)} of your ingredients. High group harmony at {round(harmony_score)}%."
         })
 
-    # Return top 5 matches (Ensures multiple results)
-    return sorted(meal_scores, key=lambda x: x["score"], reverse=True)[:5]
+    # Sort by Harmony Score and take Top 5
+    meal_scores.sort(key=lambda x: x["score"], reverse=True)
+    return meal_scores[:5]
