@@ -18,6 +18,7 @@ const TAG_SUGGESTIONS = [
 function UserCard({ user, index, onSave }) {
   const [expanded, setExpanded] = useState(false);
   const [form, setForm] = useState({
+    name: user.name,
     spice_tolerance: user.spice_tolerance,
     effort_tolerance: user.effort_tolerance,
     likes: [...user.likes],
@@ -44,7 +45,10 @@ function UserCard({ user, index, onSave }) {
     setSaving(false);
     setSaved(true);
     onSave();
-    setTimeout(() => setSaved(false), 2000);
+    setTimeout(() => {
+      setSaved(false);
+      setExpanded(false);
+    }, 1500);
   };
 
   return (
@@ -125,8 +129,24 @@ function UserCard({ user, index, onSave }) {
       {expanded && (
         <div className="px-4 pb-5 flex flex-col gap-5 border-t"
              style={{ borderColor: "#e4e2dc" }}>
-          {/* Likes editing */}
+          
+          {/* Name Editing */}
           <div className="pt-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="material-symbols-rounded" style={{ fontSize: 16, color: "#76786b" }}>person</span>
+              <span className="text-xs font-semibold" style={{ color: "#1b1c18" }}>Member Name</span>
+            </div>
+            <input
+              type="text"
+              value={form.name}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              placeholder="Enter name..."
+              className="input-field"
+            />
+          </div>
+
+          {/* Likes editing */}
+          <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="material-symbols-rounded" style={{ fontSize: 16, color: "#56642b" }}>favorite</span>
               <span className="text-xs font-semibold" style={{ color: "#56642b" }}>Likes</span>
@@ -211,8 +231,7 @@ function UserCard({ user, index, onSave }) {
           <button
             onClick={handleSave}
             disabled={saving}
-            className={saved ? "btn-tonal w-full" : "btn-primary w-full"}
-            style={saved ? {} : {}}>
+            className={saved ? "btn-tonal w-full" : "btn-primary w-full"}>
             {saved ? "✓ Saved!" : saving ? "Saving…" : "Save Changes"}
           </button>
         </div>

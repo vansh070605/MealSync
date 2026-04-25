@@ -79,6 +79,9 @@ def update_user(user_id: int, body: UserUpdate, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    
+    if body.name is not None:
+        user.name = body.name
     if body.avatar is not None:
         user.avatar = body.avatar
     if body.likes is not None:
@@ -89,6 +92,7 @@ def update_user(user_id: int, body: UserUpdate, db: Session = Depends(get_db)):
         user.spice_tolerance = body.spice_tolerance
     if body.effort_tolerance is not None:
         user.effort_tolerance = body.effort_tolerance
+        
     db.commit()
     db.refresh(user)
     return UserOut(

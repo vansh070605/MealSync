@@ -22,6 +22,7 @@ class UserCreate(UserBase):
 
 
 class UserUpdate(BaseModel):
+    name: Optional[str] = None
     avatar: Optional[str] = None
     likes: Optional[List[str]] = None
     dislikes: Optional[List[str]] = None

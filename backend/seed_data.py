@@ -8,7 +8,7 @@ from models import User, Meal
 
 USERS = [
     {
-        "name": "Alex",
+        "name": "Vansh",
         "avatar": "🧑",
         "likes": ["chicken", "grilled", "pasta"],
         "dislikes": ["tofu"],
@@ -16,7 +16,7 @@ USERS = [
         "effort_tolerance": "medium",
     },
     {
-        "name": "Priya",
+        "name": "Shashwat",
         "avatar": "👩",
         "likes": ["spicy", "paneer", "curry"],
         "dislikes": ["beef"],
@@ -24,7 +24,7 @@ USERS = [
         "effort_tolerance": "high",
     },
     {
-        "name": "Jordan",
+        "name": "Rajasthani",
         "avatar": "🧔",
         "likes": ["pizza", "cheese", "quick"],
         "dislikes": ["mushrooms"],
@@ -32,7 +32,7 @@ USERS = [
         "effort_tolerance": "low",
     },
     {
-        "name": "Sam",
+        "name": "Atharva",
         "avatar": "👨",
         "likes": ["veg", "salad", "healthy"],
         "dislikes": ["fried"],
@@ -40,7 +40,7 @@ USERS = [
         "effort_tolerance": "low",
     },
     {
-        "name": "Riley",
+        "name": "Anni",
         "avatar": "🧒",
         "likes": ["noodles", "stir-fry", "asian"],
         "dislikes": ["lamb"],
@@ -48,7 +48,7 @@ USERS = [
         "effort_tolerance": "medium",
     },
     {
-        "name": "Morgan",
+        "name": "Prajjwal",
         "avatar": "👴",
         "likes": ["soup", "comfort", "rice"],
         "dislikes": ["raw"],
