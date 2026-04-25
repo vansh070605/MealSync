@@ -9,6 +9,19 @@ export default {
       colors: {
         /* — Primary (Sage Green) — */
         primary:   { DEFAULT: "#56642b", container: "#8a9a5b", on: "#ffffff", "on-container": "#253000", fixed: "#d9eaa3", "fixed-dim": "#bdce89" },
+        /* — Sage Scale — */
+        sage: {
+          50: '#f6f7f2',
+          100: '#e9ebdf',
+          200: '#d5d9c2',
+          300: '#bbc3a0',
+          400: '#9fa77f',
+          500: '#838b62',
+          600: '#676e4c',
+          700: '#52573d',
+          800: '#424634',
+          900: '#393c2e',
+        },
         /* — Secondary (Muted Carrot) — */
         secondary: { DEFAULT: "#944a1b", container: "#ff9e68", on: "#ffffff", "on-container": "#773304", fixed: "#ffdbca", "fixed-dim": "#ffb68f" },
         /* — Tertiary (Berry) — */

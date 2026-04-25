@@ -21,6 +21,7 @@ export const recommend = (kitchen_state) =>
 // ── History ──────────────────────────────────────────────────────────────────
 export const getHistory    = (limit = 20) => api.get(`/history?limit=${limit}`);
 export const selectMeal    = (data)       => api.post("/history", data);
+export const clearHistory  = ()           => api.delete("/history");
 export const getAnalytics  = ()           => api.get("/analytics");
 
 export default api;

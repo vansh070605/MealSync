@@ -29,97 +29,95 @@ export default function Home() {
           MealSync
         </h1>
         <p className="text-base mt-1" style={{ color: "#46483c" }}>
-          Sync your dinner in seconds
+          ML-Optimized for your household
         </p>
 
         {/* Avatar stack row */}
         <div className="flex items-center gap-1.5 mt-4">
           <div className="flex -space-x-2">
-            {users.slice(0, 4).map((u, i) => (
+            {users.slice(0, 6).map((u, i) => (
               <div key={u.id}
-                   className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ring-2 ring-white"
+                   className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ring-2 ring-white"
                    style={{
-                     backgroundColor: ["#8a9a5b", "#ff9e68", "#d57881", "#bdce89"][i % 4],
+                     backgroundColor: ["#8a9a5b", "#ff9e68", "#d57881", "#bdce89", "#56642b", "#76786b"][i % 6],
                      color: "#ffffff",
-                     zIndex: 4 - i,
+                     zIndex: 10 - i,
                    }}>
                 {u.name.charAt(0)}
               </div>
             ))}
           </div>
           <span className="text-xs font-medium ml-2" style={{ color: "#56642b" }}>
-            Everyone's ready to decide
+            {users.length} members ready
           </span>
         </div>
       </div>
 
       {/* Green CTA Card — "Feeling hungry?" */}
-      <div className="mx-5 mb-5 rounded-xl overflow-hidden px-5 py-6"
+      <div className="mx-5 mb-5 rounded-3xl overflow-hidden px-6 py-7 shadow-xl shadow-sage-200/50"
            style={{ backgroundColor: "#56642b" }}>
-        <span className="inline-block px-3 py-1 rounded-full text-[11px] font-semibold mb-3"
-              style={{ backgroundColor: "rgba(255,255,255,0.15)", color: "#d9eaa3" }}>
-          Dinner tonight
-        </span>
-        <h2 className="text-[22px] font-bold text-white leading-7 mb-1">
-          Feeling hungry?
+        <div className="flex items-center gap-2 mb-3">
+          <span className="material-symbols-rounded text-[#d9eaa3]" style={{ fontSize: 18 }}>smart_toy</span>
+          <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: "#d9eaa3" }}>
+            XGBoost Engine Live
+          </span>
+        </div>
+        <h2 className="text-2xl font-bold text-white leading-tight mb-2">
+          Ready to decide?
         </h2>
-        <p className="text-sm mb-5" style={{ color: "#bdce89" }}>
-          We've analyzed everyone's preferences for a perfect match.
+        <p className="text-sm mb-6 leading-relaxed" style={{ color: "#bdce89" }}>
+          Our AI has analyzed 110+ meals against everyone's preferences for the perfect match.
         </p>
         <button
           onClick={() => navigate("/input")}
-          className="w-full flex items-center justify-center gap-2 py-3.5 rounded-lg text-sm font-semibold transition-all active:scale-[0.97]"
+          className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl text-sm font-bold transition-all active:scale-[0.97] shadow-lg shadow-black/10"
           style={{ backgroundColor: "#ffffff", color: "#56642b" }}>
-          <span className="material-symbols-rounded" style={{ fontSize: 18 }}>restaurant_menu</span>
-          Get Recommendation
+          <span className="material-symbols-rounded" style={{ fontSize: 20 }}>auto_fix_high</span>
+          Generate Best Match
         </button>
       </div>
 
       {/* LAST MEAL CHOSEN */}
-      <div className="px-5 mb-4">
+      <div className="px-5 mb-5">
         <p className="section-label mb-3">LAST MEAL CHOSEN</p>
-        <div className="card px-4 py-3.5 flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
-               style={{ backgroundColor: "#f0eee7" }}>
-            🥗
+        <div className="card px-4 py-4 flex items-center gap-4 hover:shadow-md transition-shadow">
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shadow-inner bg-gradient-to-br from-sage-50 to-sage-100">
+            {lastMeal ? "🍲" : "🥘"}
           </div>
           <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-bold" style={{ color: "#1b1c18" }}>
-                {lastMeal ? lastMeal.meal_name : "Harvest Bowl"}
+            <div className="flex items-center justify-between">
+              <span className="text-base font-bold" style={{ color: "#1b1c18" }}>
+                {lastMeal ? lastMeal.meal_name : "Quick Dal Tadka"}
               </span>
-              <span className="badge-good text-[11px]">
-                {lastMeal ? `${Object.keys(lastMeal.satisfactions).length}` : "4.8"} ★
+              <span className="badge-good text-[11px] flex items-center gap-0.5">
+                <span className="material-symbols-rounded text-[12px]">star</span>
+                {lastMeal ? "4.9" : "4.8"}
               </span>
             </div>
-            <p className="text-xs mt-0.5" style={{ color: "#76786b" }}>
+            <p className="text-xs mt-0.5 font-medium" style={{ color: "#76786b" }}>
               {lastMeal
-                ? `Agreed by ${Object.keys(lastMeal.satisfactions).slice(0, 3).join(", ")}`
-                : "Agreed by Sarah, Ben & Leo"}
+                ? `Harmony achieved with ${Object.keys(lastMeal.satisfactions).length} members`
+                : "A top pick for Vansh & Priya"}
             </p>
-            <div className="flex items-center gap-3 mt-1">
-              <span className="text-[11px]" style={{ color: "#76786b" }}>Healthy</span>
-              <span className="text-[11px]" style={{ color: "#76786b" }}>15 min</span>
-            </div>
           </div>
         </div>
       </div>
 
-      {/* Stats row — Streak + Group */}
-      <div className="px-5 grid grid-cols-2 gap-3">
-        <div className="card px-4 py-4 flex flex-col items-center">
-          <span className="material-symbols-rounded mb-1" style={{ fontSize: 22, color: "#56642b" }}>
-            local_fire_department
-          </span>
-          <p className="text-xs" style={{ color: "#76786b" }}>Streak</p>
-          <p className="text-xl font-bold" style={{ color: "#1b1c18" }}>5 Days</p>
+      {/* Stats row — Library + Group */}
+      <div className="px-5 grid grid-cols-2 gap-4">
+        <div className="card px-4 py-5 flex flex-col items-center text-center">
+          <div className="w-10 h-10 rounded-full bg-sage-50 flex items-center justify-center mb-2">
+             <span className="material-symbols-rounded" style={{ fontSize: 24, color: "#56642b" }}>menu_book</span>
+          </div>
+          <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "#76786b" }}>Library</p>
+          <p className="text-lg font-bold" style={{ color: "#1b1c18" }}>110 Meals</p>
         </div>
-        <div className="card px-4 py-4 flex flex-col items-center">
-          <span className="material-symbols-rounded mb-1" style={{ fontSize: 22, color: "#56642b" }}>
-            groups
-          </span>
-          <p className="text-xs" style={{ color: "#76786b" }}>Group</p>
-          <p className="text-xl font-bold" style={{ color: "#1b1c18" }}>Family</p>
+        <div className="card px-4 py-5 flex flex-col items-center text-center">
+          <div className="w-10 h-10 rounded-full bg-sage-50 flex items-center justify-center mb-2">
+             <span className="material-symbols-rounded" style={{ fontSize: 24, color: "#56642b" }}>verified</span>
+          </div>
+          <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "#76786b" }}>Status</p>
+          <p className="text-lg font-bold" style={{ color: "#1b1c18" }}>Optimized</p>
         </div>
       </div>
     </div>

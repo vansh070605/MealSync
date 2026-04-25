@@ -1,157 +1,45 @@
-# MealSync — Collaborative Meal Decision Engine
+# 🍽️ MealSync: Collaborative AI Meal Engine
 
-A **production-quality** full-stack app for 6 flatmates to collaboratively decide what to cook for dinner, with fairness-aware scoring, constraint filtering, and a beautiful mobile-first UI.
+MealSync is a high-fidelity, machine-learning-powered platform designed for households to make collaborative food decisions. Built for a group of 6 flatmates, it solves the "What should we eat?" dilemma by balancing individual preferences, kitchen constraints, and group harmony.
 
----
+![MealSync Demo](https://images.unsplash.com/photo-1543353071-873f17a7a088?auto=format&fit=crop&q=80&w=1200)
 
-## Project Structure
+## 🧠 The Intelligence Layer
+MealSync uses an **XGBoost Regression Model** to predict group satisfaction. 
+- **Fairness Engine**: It doesn't just pick the average; it uses a custom scoring algorithm that respects individual "vetos" (low scores) to ensure no one is left unhappy.
+- **Dynamic Learning**: Every time a meal is logged in the history, the model retrains its weights to better understand your group's evolving palate.
+- **Soft Matching**: Our recommendation engine uses fuzzy logic to suggest meals even if you're missing a minor ingredient, prioritizing feasibility over strict rules.
 
-```
-MealSync/
-├── backend/
-│   ├── main.py          # FastAPI entry point
-│   ├── database.py      # SQLite + SQLAlchemy setup
-│   ├── models.py        # ORM models (User, Meal, MealHistory, Satisfaction)
-│   ├── schemas.py       # Pydantic schemas
-│   ├── scoring.py       # 🧠 Core scoring engine
-│   ├── seed_data.py     # 6 users + 30 meals seed
-│   ├── requirements.txt
-│   └── routers/
-│       ├── users.py     # /users CRUD
-│       ├── recommend.py # /recommend + /history POST
-│       └── history.py   # /history GET + /analytics
-│
-└── frontend/
-    ├── src/
-    │   ├── api.js           # Axios API client
-    │   ├── store.js         # React Context global state
-    │   ├── App.jsx          # Router + layout
-    │   ├── index.css        # Tailwind + design tokens
-    │   ├── components/
-    │   │   ├── BottomNav.jsx
-    │   │   ├── Loader.jsx
-    │   │   ├── ErrorBanner.jsx
-    │   │   ├── MealCard.jsx
-    │   │   └── SatisfactionModal.jsx
-    │   └── pages/
-    │       ├── Home.jsx
-    │       ├── InputScreen.jsx
-    │       ├── RecommendScreen.jsx
-    │       ├── HistoryScreen.jsx
-    │       └── PreferencesScreen.jsx
-    ├── tailwind.config.js
-    └── .env
-```
+## ✨ Core Features
+- **Smart Recommendations**: Get a Top-5 list of meals based on your current kitchen stock and mood.
+- **Household Profiles**: Manage preferences for Vansh, Shashwat, Rajasthani, Atharva, Anni, and Prajjwal.
+- **Live Kitchen Sync**: Real-time tracking of ingredients and time availability.
+- **Meal Journal**: Track what you've cooked, how much everyone liked it, and clear history with one click.
+- **Premium UI**: A glassmorphic, mobile-first design with professional food photography for all 110+ dishes.
+
+## 🛠️ Tech Stack
+- **Frontend**: React 18, Tailwind CSS, Framer Motion (for smooth micro-animations).
+- **Backend**: FastAPI (Python 3.12), SQLAlchemy.
+- **ML Engine**: Scikit-Learn, XGBoost, Pandas.
+- **Database**: SQLite (Production-ready for small groups).
+
+## 🚀 Quick Start
+
+### Backend
+1. `cd backend`
+2. `pip install -r requirements.txt`
+3. `python main.py`
+*The server will initialize the database with 110 Indian dishes and 6 default users automatically.*
+
+### Frontend
+1. `cd frontend`
+2. `npm install`
+3. `npm run dev`
+
+## 🌍 Deployment
+The project is configured for easy deployment on **Render**, **Vercel**, or **Heroku**.
+- **Backend**: Update `PORT` environment variable.
+- **Frontend**: Set `VITE_API_URL` to your backend domain.
 
 ---
-
-## Quick Start
-
-### 1. Backend
-
-```bash
-cd backend
-python -m venv venv
-venv\Scripts\activate          # Windows
-# source venv/bin/activate     # macOS/Linux
-
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
-```
-
-API docs: http://localhost:8000/docs
-
-### 2. Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-App: http://localhost:5173
-
----
-
-## API Reference
-
-| Method | Endpoint       | Description                          |
-|--------|---------------|--------------------------------------|
-| GET    | /users/        | List all 6 flatmates                 |
-| GET    | /users/{id}    | Get single user                      |
-| PATCH  | /users/{id}    | Update preferences                   |
-| POST   | /recommend     | Get top-3 meal recommendations       |
-| POST   | /history       | Record selected meal + satisfaction  |
-| GET    | /history       | Get meal history                     |
-| GET    | /analytics     | Satisfaction analytics + fairness    |
-
-### POST /recommend — Request Body
-
-```json
-{
-  "available_ingredients": ["chicken", "garlic", "tomatoes"],
-  "time_available": 45,
-  "budget_per_person": 8.0,
-  "mood": "quick"
-}
-```
-
-### POST /history — Record Selection
-
-```json
-{
-  "meal_id": 7,
-  "satisfaction_scores": {
-    "Alex": 0.9,
-    "Priya": 0.75,
-    "Jordan": 0.5,
-    "Sam": 0.85,
-    "Riley": 0.7,
-    "Morgan": 0.6
-  }
-}
-```
-
----
-
-## Scoring Engine
-
-```
-Score = Σ (user_preference(meal, user) × fairness_weight(user))
-        - repetition_penalty
-```
-
-**Per-user preference score** includes:
-- `+2.0` per matched like (ingredient/tag/cuisine)
-- `-3.0` per matched dislike
-- Spice penalty if meal spice > user tolerance
-- Effort penalty if meal difficulty > user effort tolerance
-
-**Fairness weights** — users with lower cumulative satisfaction get higher weights, preventing chronic under-satisfaction.
-
-**Repetition penalty** — exponential decay (0.8^i × 3) for each occurrence in recent history.
-
----
-
-## Default Users
-
-| Name   | Emoji | Spice | Effort  | Likes              |
-|--------|-------|-------|---------|--------------------|
-| Alex   | 🧑    | 2/5   | medium  | chicken, grilled   |
-| Priya  | 👩    | 5/5   | high    | spicy, paneer      |
-| Jordan | 🧔    | 2/5   | low     | pizza, cheese      |
-| Sam    | 👨    | 3/5   | low     | veg, salad, healthy|
-| Riley  | 🧒    | 3/5   | medium  | noodles, asian     |
-| Morgan | 👴    | 1/5   | medium  | soup, comfort, rice|
-
----
-
-## Mobile-First Design
-
-- Optimized for 320px–480px viewports
-- Touch-friendly chips and large tap targets
-- Sticky bottom navigation bar
-- Ingredient multi-select with search
-- Sliders for time and budget
-- Bottom-sheet satisfaction modal
-- No horizontal scrolling
+*Created with ❤️ for better group living.*

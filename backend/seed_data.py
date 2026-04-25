@@ -1,397 +1,44 @@
 """
-seed_data.py — Populate the database with 6 default users and 30 meals.
-Run once on first start (idempotent).
+seed_data.py — Populate the database from food_data.csv and default users.
 """
+import pandas as pd
 from sqlalchemy.orm import Session
 from models import User, Meal
 
-
 USERS = [
-    {
-        "name": "Vansh",
-        "avatar": "🧑",
-        "likes": ["chicken", "grilled", "pasta"],
-        "dislikes": ["tofu"],
-        "spice_tolerance": 2,
-        "effort_tolerance": "medium",
-    },
-    {
-        "name": "Shashwat",
-        "avatar": "👩",
-        "likes": ["spicy", "paneer", "curry"],
-        "dislikes": ["beef"],
-        "spice_tolerance": 5,
-        "effort_tolerance": "high",
-    },
-    {
-        "name": "Rajasthani",
-        "avatar": "🧔",
-        "likes": ["pizza", "cheese", "quick"],
-        "dislikes": ["mushrooms"],
-        "spice_tolerance": 2,
-        "effort_tolerance": "low",
-    },
-    {
-        "name": "Atharva",
-        "avatar": "👨",
-        "likes": ["veg", "salad", "healthy"],
-        "dislikes": ["fried"],
-        "spice_tolerance": 3,
-        "effort_tolerance": "low",
-    },
-    {
-        "name": "Anni",
-        "avatar": "🧒",
-        "likes": ["noodles", "stir-fry", "asian"],
-        "dislikes": ["lamb"],
-        "spice_tolerance": 3,
-        "effort_tolerance": "medium",
-    },
-    {
-        "name": "Prajjwal",
-        "avatar": "👴",
-        "likes": ["soup", "comfort", "rice"],
-        "dislikes": ["raw"],
-        "spice_tolerance": 1,
-        "effort_tolerance": "medium",
-    },
+    {"name": "Vansh", "avatar": "🧑", "likes": ["chicken", "pasta", "bread"], "dislikes": ["tofu"], "spice_tolerance": 2},
+    {"name": "Shashwat", "avatar": "👩", "likes": ["spicy", "paneer", "curry"], "dislikes": ["beef"], "spice_tolerance": 5},
+    {"name": "Rajasthani", "avatar": "🧔", "likes": ["potato", "paneer", "rice"], "dislikes": ["mushrooms"], "spice_tolerance": 2},
+    {"name": "Atharva", "avatar": "👨", "likes": ["veg", "healthy", "lentils"], "dislikes": ["fried"], "spice_tolerance": 3},
+    {"name": "Anni", "avatar": "🧒", "likes": ["noodles", "asian", "cheese"], "dislikes": ["lamb"], "spice_tolerance": 3},
+    {"name": "Prajjwal", "avatar": "👴", "likes": ["soup", "comfort", "rice"], "dislikes": ["raw"], "spice_tolerance": 1}
 ]
-
-MEALS = [
-    # ── Quick meals ──────────────────────────────────────────────
-    {
-        "name": "Margherita Pizza",
-        "description": "Classic Italian pizza with tomato, mozzarella and basil.",
-        "ingredients": ["pizza dough", "tomato sauce", "mozzarella", "basil", "olive oil"],
-        "prep_time": 25,
-        "difficulty": "easy",
-        "tags": ["quick", "veg", "italian", "cheese"],
-        "cost_estimate": 3.5,
-        "cuisine": "Italian",
-    },
-    {
-        "name": "Spaghetti Aglio e Olio",
-        "description": "Pasta with garlic, olive oil, chilli flakes — pantry classic.",
-        "ingredients": ["spaghetti", "garlic", "olive oil", "chilli flakes", "parsley"],
-        "prep_time": 20,
-        "difficulty": "easy",
-        "tags": ["quick", "veg", "pasta", "italian", "spicy"],
-        "cost_estimate": 2.0,
-        "cuisine": "Italian",
-    },
-    {
-        "name": "Egg Fried Rice",
-        "description": "Quick wok-tossed rice with eggs and vegetables.",
-        "ingredients": ["rice", "eggs", "soy sauce", "spring onion", "garlic", "oil"],
-        "prep_time": 20,
-        "difficulty": "easy",
-        "tags": ["quick", "asian", "rice", "eggs"],
-        "cost_estimate": 2.5,
-        "cuisine": "Asian",
-    },
-    {
-        "name": "Avocado Toast",
-        "description": "Toasted bread topped with mashed avocado and seasoning.",
-        "ingredients": ["bread", "avocado", "lemon", "salt", "chilli flakes"],
-        "prep_time": 10,
-        "difficulty": "easy",
-        "tags": ["quick", "veg", "healthy", "light", "breakfast"],
-        "cost_estimate": 3.0,
-        "cuisine": "Modern",
-    },
-    {
-        "name": "Grilled Cheese Sandwich",
-        "description": "Buttery, crispy sandwich with melted cheese.",
-        "ingredients": ["bread", "butter", "cheddar", "mozzarella"],
-        "prep_time": 15,
-        "difficulty": "easy",
-        "tags": ["quick", "veg", "cheese", "comfort"],
-        "cost_estimate": 2.0,
-        "cuisine": "American",
-    },
-    {
-        "name": "Instant Ramen Bowl",
-        "description": "Upgraded ramen with soft egg, spring onion and chilli oil.",
-        "ingredients": ["ramen noodles", "eggs", "spring onion", "chilli oil", "soy sauce"],
-        "prep_time": 15,
-        "difficulty": "easy",
-        "tags": ["quick", "noodles", "asian", "spicy"],
-        "cost_estimate": 2.0,
-        "cuisine": "Japanese",
-    },
-    # ── Medium effort ─────────────────────────────────────────────
-    {
-        "name": "Chicken Stir-Fry",
-        "description": "Wok-tossed chicken with bell peppers, broccoli and oyster sauce.",
-        "ingredients": ["chicken breast", "bell peppers", "broccoli", "garlic", "oyster sauce", "soy sauce", "oil"],
-        "prep_time": 30,
-        "difficulty": "medium",
-        "tags": ["asian", "stir-fry", "chicken", "healthy"],
-        "cost_estimate": 4.5,
-        "cuisine": "Asian",
-    },
-    {
-        "name": "Paneer Butter Masala",
-        "description": "Rich tomato-butter curry with soft paneer cubes.",
-        "ingredients": ["paneer", "tomatoes", "butter", "cream", "onion", "garlic", "ginger", "spices"],
-        "prep_time": 35,
-        "difficulty": "medium",
-        "tags": ["indian", "curry", "spicy", "paneer", "veg"],
-        "cost_estimate": 4.0,
-        "cuisine": "Indian",
-    },
-    {
-        "name": "Pasta Arrabiata",
-        "description": "Spicy tomato sauce with penne, garlic and chilli.",
-        "ingredients": ["penne", "canned tomatoes", "garlic", "chilli flakes", "olive oil", "basil"],
-        "prep_time": 30,
-        "difficulty": "easy",
-        "tags": ["pasta", "spicy", "veg", "italian"],
-        "cost_estimate": 2.5,
-        "cuisine": "Italian",
-    },
-    {
-        "name": "Caesar Salad with Grilled Chicken",
-        "description": "Crisp romaine, parmesan and grilled chicken with creamy caesar dressing.",
-        "ingredients": ["romaine lettuce", "chicken breast", "parmesan", "croutons", "caesar dressing"],
-        "prep_time": 25,
-        "difficulty": "easy",
-        "tags": ["salad", "healthy", "light", "chicken"],
-        "cost_estimate": 5.0,
-        "cuisine": "American",
-    },
-    {
-        "name": "Dal Tadka",
-        "description": "Yellow lentils tempered with cumin, mustard seeds and garlic.",
-        "ingredients": ["yellow lentils", "tomatoes", "onion", "garlic", "cumin", "mustard seeds", "ghee"],
-        "prep_time": 35,
-        "difficulty": "medium",
-        "tags": ["indian", "veg", "healthy", "comfort", "soup"],
-        "cost_estimate": 2.0,
-        "cuisine": "Indian",
-    },
-    {
-        "name": "Chicken Quesadillas",
-        "description": "Crispy tortilla filled with chicken, cheese and salsa.",
-        "ingredients": ["flour tortilla", "chicken", "cheddar", "salsa", "sour cream", "bell peppers"],
-        "prep_time": 25,
-        "difficulty": "easy",
-        "tags": ["mexican", "chicken", "cheese", "quick"],
-        "cost_estimate": 4.0,
-        "cuisine": "Mexican",
-    },
-    {
-        "name": "Vegetable Curry",
-        "description": "Mixed vegetable curry in a coconut-tomato base.",
-        "ingredients": ["potatoes", "peas", "carrots", "coconut milk", "tomatoes", "onion", "spices"],
-        "prep_time": 35,
-        "difficulty": "medium",
-        "tags": ["indian", "veg", "curry", "healthy", "spicy"],
-        "cost_estimate": 3.0,
-        "cuisine": "Indian",
-    },
-    {
-        "name": "Beef Tacos",
-        "description": "Seasoned ground beef in soft shells with guacamole and pico.",
-        "ingredients": ["ground beef", "taco shells", "guacamole", "tomatoes", "lettuce", "cheddar", "sour cream"],
-        "prep_time": 30,
-        "difficulty": "medium",
-        "tags": ["mexican", "beef", "quick"],
-        "cost_estimate": 5.5,
-        "cuisine": "Mexican",
-    },
-    {
-        "name": "Shakshuka",
-        "description": "Eggs poached in spiced tomato and pepper sauce.",
-        "ingredients": ["eggs", "canned tomatoes", "bell peppers", "onion", "garlic", "cumin", "paprika"],
-        "prep_time": 25,
-        "difficulty": "easy",
-        "tags": ["eggs", "veg", "spicy", "light", "healthy"],
-        "cost_estimate": 3.0,
-        "cuisine": "Middle Eastern",
-    },
-    {
-        "name": "Mushroom Risotto",
-        "description": "Creamy arborio rice with sautéed mushrooms and parmesan.",
-        "ingredients": ["arborio rice", "mushrooms", "parmesan", "butter", "onion", "white wine", "stock"],
-        "prep_time": 45,
-        "difficulty": "medium",
-        "tags": ["italian", "veg", "comfort", "rice"],
-        "cost_estimate": 5.0,
-        "cuisine": "Italian",
-    },
-    {
-        "name": "Tom Yum Soup",
-        "description": "Thai hot-and-sour soup with lemongrass, shrimp and mushrooms.",
-        "ingredients": ["shrimp", "mushrooms", "lemongrass", "lime", "fish sauce", "chilli", "galangal"],
-        "prep_time": 30,
-        "difficulty": "medium",
-        "tags": ["thai", "soup", "spicy", "asian", "seafood"],
-        "cost_estimate": 4.5,
-        "cuisine": "Thai",
-    },
-    {
-        "name": "Greek Salad",
-        "description": "Tomatoes, cucumber, olives, feta and oregano with olive oil.",
-        "ingredients": ["tomatoes", "cucumber", "olives", "feta", "red onion", "olive oil", "oregano"],
-        "prep_time": 10,
-        "difficulty": "easy",
-        "tags": ["salad", "veg", "quick", "light", "healthy", "greek"],
-        "cost_estimate": 3.5,
-        "cuisine": "Greek",
-    },
-    # ── Higher effort ─────────────────────────────────────────────
-    {
-        "name": "Chicken Biryani",
-        "description": "Aromatic layered rice and chicken, slow-cooked with whole spices.",
-        "ingredients": ["basmati rice", "chicken", "yogurt", "onion", "saffron", "whole spices", "ghee", "mint"],
-        "prep_time": 60,
-        "difficulty": "hard",
-        "tags": ["indian", "chicken", "rice", "spicy", "heavy"],
-        "cost_estimate": 5.0,
-        "cuisine": "Indian",
-    },
-    {
-        "name": "Lasagne",
-        "description": "Layers of pasta, béchamel, and bolognese sauce, oven-baked.",
-        "ingredients": ["lasagne sheets", "ground beef", "bechamel sauce", "canned tomatoes", "mozzarella", "onion"],
-        "prep_time": 70,
-        "difficulty": "hard",
-        "tags": ["italian", "pasta", "beef", "heavy", "comfort"],
-        "cost_estimate": 6.0,
-        "cuisine": "Italian",
-    },
-    {
-        "name": "Thai Green Curry",
-        "description": "Chicken or tofu in a fragrant coconut green curry paste.",
-        "ingredients": ["chicken", "coconut milk", "green curry paste", "bamboo shoots", "thai basil", "fish sauce"],
-        "prep_time": 35,
-        "difficulty": "medium",
-        "tags": ["thai", "curry", "spicy", "very_spicy", "coconut", "asian"],
-        "cost_estimate": 4.5,
-        "cuisine": "Thai",
-    },
-    {
-        "name": "Salmon Teriyaki",
-        "description": "Pan-seared salmon with homemade teriyaki glaze and steamed rice.",
-        "ingredients": ["salmon fillet", "soy sauce", "mirin", "sake", "sugar", "rice", "sesame"],
-        "prep_time": 25,
-        "difficulty": "medium",
-        "tags": ["japanese", "fish", "healthy", "asian"],
-        "cost_estimate": 7.0,
-        "cuisine": "Japanese",
-    },
-    {
-        "name": "Falafel Wrap",
-        "description": "Crispy chickpea falafel in pita with tahini and salad.",
-        "ingredients": ["chickpeas", "pita bread", "tahini", "cucumber", "tomatoes", "parsley", "cumin"],
-        "prep_time": 40,
-        "difficulty": "medium",
-        "tags": ["middle-eastern", "veg", "healthy"],
-        "cost_estimate": 3.5,
-        "cuisine": "Middle Eastern",
-    },
-    {
-        "name": "Pulled Pork Sliders",
-        "description": "Slow-cooked pulled pork on soft buns with coleslaw.",
-        "ingredients": ["pork shoulder", "bbq sauce", "buns", "coleslaw", "pickles"],
-        "prep_time": 90,
-        "difficulty": "hard",
-        "tags": ["american", "pork", "heavy", "comfort"],
-        "cost_estimate": 6.5,
-        "cuisine": "American",
-    },
-    {
-        "name": "Minestrone Soup",
-        "description": "Italian vegetable and pasta soup with parmesan.",
-        "ingredients": ["mixed vegetables", "cannellini beans", "pasta", "canned tomatoes", "stock", "parmesan", "basil"],
-        "prep_time": 40,
-        "difficulty": "medium",
-        "tags": ["italian", "soup", "veg", "healthy", "comfort"],
-        "cost_estimate": 3.0,
-        "cuisine": "Italian",
-    },
-    {
-        "name": "Pho Bo",
-        "description": "Vietnamese beef noodle soup with star anise, ginger and herbs.",
-        "ingredients": ["beef bones", "rice noodles", "bean sprouts", "star anise", "ginger", "spring onion", "basil"],
-        "prep_time": 90,
-        "difficulty": "hard",
-        "tags": ["vietnamese", "soup", "noodles", "beef", "asian"],
-        "cost_estimate": 5.5,
-        "cuisine": "Vietnamese",
-    },
-    {
-        "name": "Butter Chicken",
-        "description": "Tender chicken in a rich, mildly spiced tomato-cream sauce.",
-        "ingredients": ["chicken", "tomato puree", "butter", "cream", "onion", "garlic", "ginger", "spices"],
-        "prep_time": 40,
-        "difficulty": "medium",
-        "tags": ["indian", "chicken", "curry", "spicy", "comfort"],
-        "cost_estimate": 5.0,
-        "cuisine": "Indian",
-    },
-    {
-        "name": "Veggie Burger",
-        "description": "Homemade black bean patty with guac, cheese and brioche bun.",
-        "ingredients": ["black beans", "brioche bun", "guacamole", "cheddar", "lettuce", "tomato", "onion"],
-        "prep_time": 30,
-        "difficulty": "medium",
-        "tags": ["veg", "american", "healthy", "quick"],
-        "cost_estimate": 4.5,
-        "cuisine": "American",
-    },
-    {
-        "name": "Pad Thai",
-        "description": "Stir-fried rice noodles with tamarind, egg, tofu/shrimp and peanuts.",
-        "ingredients": ["rice noodles", "tamarind paste", "eggs", "tofu", "bean sprouts", "peanuts", "lime"],
-        "prep_time": 30,
-        "difficulty": "medium",
-        "tags": ["thai", "noodles", "asian", "stir-fry"],
-        "cost_estimate": 4.0,
-        "cuisine": "Thai",
-    },
-    {
-        "name": "Lamb Rogan Josh",
-        "description": "Kashmiri lamb curry with whole spices and yogurt.",
-        "ingredients": ["lamb", "yogurt", "onion", "garlic", "ginger", "whole spices", "kashmiri chilli"],
-        "prep_time": 60,
-        "difficulty": "hard",
-        "tags": ["indian", "lamb", "curry", "spicy", "very_spicy", "heavy"],
-        "cost_estimate": 7.0,
-        "cuisine": "Indian",
-    },
-]
-
 
 def seed(db: Session) -> None:
-    """Insert seed data if tables are empty."""
     if db.query(User).count() == 0:
         for u in USERS:
-            user = User(
-                name=u["name"],
-                avatar=u["avatar"],
-                spice_tolerance=u["spice_tolerance"],
-                effort_tolerance=u["effort_tolerance"],
-            )
+            user = User(name=u["name"], avatar=u["avatar"], spice_tolerance=u["spice_tolerance"])
             user.likes = u["likes"]
             user.dislikes = u["dislikes"]
             db.add(user)
         db.commit()
-        print("✅  Seeded 6 users.")
+        print("✅ Seeded 6 users.")
 
     if db.query(Meal).count() == 0:
-        for m in MEALS:
+        df = pd.read_csv('food_data.csv')
+        for _, row in df.iterrows():
+            tags = ["spicy"] if row['spice_level'] >= 3 else []
+            if row['is_veg'] == 1: tags.append("veg")
+            
             meal = Meal(
-                name=m["name"],
-                description=m["description"],
-                prep_time=m["prep_time"],
-                difficulty=m["difficulty"],
-                cost_estimate=m["cost_estimate"],
-                cuisine=m["cuisine"],
+                name=row['name'],
+                description=f"A delicious {row['name']} prepared with {row['main_ingredients']}.",
+                prep_time=int(row['prep_time_mins']),
+                cost_estimate=float(row['budget_tier']) * 3.5,
+                cuisine="Indian" if "Outlier" not in str(row['name']) else "Special"
             )
-            meal.ingredients = m["ingredients"]
-            meal.tags = m["tags"]
+            meal.ingredients = [i.strip() for i in str(row['main_ingredients']).split(',')]
+            meal.tags = tags
             db.add(meal)
         db.commit()
-        print(f"✅  Seeded {len(MEALS)} meals.")
+        print(f"✅ Seeded {len(df)} meals from CSV.")

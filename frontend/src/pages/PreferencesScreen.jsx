@@ -1,18 +1,13 @@
-// pages/PreferencesScreen.jsx — Matches the Stitch "User Preferences" screen exactly
-// Layout: TopBar → "Household Members" title + subtitle → User cards (avatar, name, role, likes chips, dislikes chips, spice slider, edit icon) → Bottom nav
 import { useEffect, useState } from "react";
 import TopBar from "../components/TopBar";
 import { getUsers, updateUser } from "../api";
 import Loader from "../components/Loader";
 
 const AVATAR_COLORS = ["#8a9a5b", "#ff9e68", "#d57881", "#bdce89", "#56642b", "#76786b"];
-const ROLES = ["Primary User", "Member", "Vegetarian", "Member", "Member", "Guest"];
 
-const SPICE_LABELS = ["Low", "Medium", "High"];
 const TAG_SUGGESTIONS = [
-  "Italian", "Seafood", "Leafy Greens", "BBQ", "Spicy Thai",
-  "Tofu", "Pasta", "Indian", "Mexican", "Asian",
-  "Healthy", "Comfort", "Soup", "Grilled", "Rice",
+  "Chicken", "Paneer", "Pasta", "Spicy", "Healthy", "Rice", 
+  "Indian", "Asian", "Noodles", "Soup", "Potato", "Cheese"
 ];
 
 function UserCard({ user, index, onSave }) {
@@ -27,8 +22,6 @@ function UserCard({ user, index, onSave }) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved]   = useState(false);
 
-  const spiceLabel = user.spice_tolerance <= 2 ? "Low" : user.spice_tolerance <= 3 ? "Medium" : "High";
-
   const removeTag = (field, tag) =>
     setForm((f) => ({ ...f, [field]: f[field].filter((t) => t !== tag) }));
 
@@ -41,199 +34,105 @@ function UserCard({ user, index, onSave }) {
 
   const handleSave = async () => {
     setSaving(true);
-    await updateUser(user.id, form);
-    setSaving(false);
-    setSaved(true);
-    onSave();
-    setTimeout(() => {
-      setSaved(false);
-      setExpanded(false);
-    }, 1500);
+    try {
+      await onSave(user.id, form);
+      setSaved(true);
+      setTimeout(() => {
+        setSaved(false);
+        setExpanded(false);
+      }, 1500);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <div className="card overflow-hidden">
-      {/* Collapsed header */}
-      <div className="flex items-center gap-3 px-4 py-4">
-        {/* Avatar circle */}
-        <div
-          className="w-11 h-11 rounded-full flex items-center justify-center text-lg font-bold text-white shrink-0"
-          style={{ backgroundColor: AVATAR_COLORS[index % AVATAR_COLORS.length] }}>
+    <div className={`card transition-all duration-300 ${expanded ? "ring-2 ring-emerald-500" : ""}`}>
+      <div className="p-4 flex items-center gap-4">
+        <div 
+          className="w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-inner text-white font-bold"
+          style={{ backgroundColor: AVATAR_COLORS[index % AVATAR_COLORS.length] }}
+        >
           {user.name.charAt(0)}
         </div>
-
-        {/* Name + role */}
         <div className="flex-1">
-          <p className="text-sm font-bold" style={{ color: "#1b1c18" }}>{user.name}</p>
-          <p className="text-xs" style={{ color: "#76786b" }}>{ROLES[index] || "Member"}</p>
+          <h3 className="text-base font-bold text-slate-800">{user.name}</h3>
+          <p className="text-xs text-slate-500 font-medium capitalize">
+            {user.effort_tolerance} Effort • Spice: {user.spice_tolerance}/5
+          </p>
         </div>
-
-        {/* Edit button */}
-        <button
+        <button 
           onClick={() => setExpanded(!expanded)}
-          className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
-          style={{ backgroundColor: expanded ? "#d9eaa3" : "#f0eee7" }}>
-          <span className="material-symbols-rounded"
-                style={{ fontSize: 18, color: expanded ? "#253000" : "#46483c" }}>
-            {expanded ? "close" : "edit"}
+          className="p-2 rounded-full hover:bg-slate-50 text-slate-400 transition-colors"
+        >
+          <span className="material-symbols-rounded">
+            {expanded ? "expand_less" : "edit"}
           </span>
         </button>
       </div>
 
-      {/* Collapsed preview: likes + dislikes chips, spice */}
-      {!expanded && (
-        <div className="px-4 pb-4 flex flex-col gap-2">
-          {/* Likes */}
-          {user.likes.length > 0 && (
-            <div className="flex items-start gap-2">
-              <span className="material-symbols-rounded shrink-0 mt-0.5"
-                    style={{ fontSize: 16, color: "#56642b" }}>favorite</span>
-              <span className="text-xs font-semibold shrink-0" style={{ color: "#56642b" }}>Likes</span>
-              <div className="flex flex-wrap gap-1.5">
-                {user.likes.slice(0, 3).map((tag) => (
-                  <span key={tag} className="px-2.5 py-0.5 rounded-full text-[11px] font-medium"
-                        style={{ backgroundColor: "#d9eaa3", color: "#253000" }}>
-                    {tag.charAt(0).toUpperCase() + tag.slice(1)}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-          {/* Dislikes */}
-          {user.dislikes.length > 0 && (
-            <div className="flex items-start gap-2">
-              <span className="material-symbols-rounded shrink-0 mt-0.5"
-                    style={{ fontSize: 16, color: "#95454e" }}>block</span>
-              <span className="text-xs font-semibold shrink-0" style={{ color: "#95454e" }}>Dislikes</span>
-              <div className="flex flex-wrap gap-1.5">
-                {user.dislikes.slice(0, 3).map((tag) => (
-                  <span key={tag} className="px-2.5 py-0.5 rounded-full text-[11px] font-medium"
-                        style={{ backgroundColor: "#ffdadb", color: "#55141f" }}>
-                    {tag.charAt(0).toUpperCase() + tag.slice(1)}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-          {/* Spice tolerance */}
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-rounded shrink-0"
-                  style={{ fontSize: 16, color: "#944a1b" }}>local_fire_department</span>
-            <span className="text-xs font-semibold" style={{ color: "#944a1b" }}>Spice Tolerance</span>
-            <span className="text-xs font-semibold ml-auto" style={{ color: "#1b1c18" }}>{spiceLabel}</span>
-          </div>
-        </div>
-      )}
-
-      {/* Expanded edit form */}
       {expanded && (
-        <div className="px-4 pb-5 flex flex-col gap-5 border-t"
-             style={{ borderColor: "#e4e2dc" }}>
-          
-          {/* Name Editing */}
-          <div className="pt-4">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="material-symbols-rounded" style={{ fontSize: 16, color: "#76786b" }}>person</span>
-              <span className="text-xs font-semibold" style={{ color: "#1b1c18" }}>Member Name</span>
+        <div className="px-4 pb-5 pt-2 border-t border-slate-50 animate-fade-in">
+          <div className="space-y-5">
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5 block">Member Name</label>
+              <input 
+                type="text"
+                value={form.name}
+                onChange={(e) => setForm({...form, name: e.target.value})}
+                className="w-full bg-slate-50 border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-200 outline-none"
+              />
             </div>
-            <input
-              type="text"
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              placeholder="Enter name..."
-              className="input-field"
-            />
-          </div>
 
-          {/* Likes editing */}
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="material-symbols-rounded" style={{ fontSize: 16, color: "#56642b" }}>favorite</span>
-              <span className="text-xs font-semibold" style={{ color: "#56642b" }}>Likes</span>
-            </div>
-            <div className="flex flex-wrap gap-1.5 mb-2">
-              {form.likes.map((tag) => (
-                <button key={tag} onClick={() => removeTag("likes", tag)}
-                  className="px-2.5 py-1 rounded-full text-[11px] font-medium flex items-center gap-1"
-                  style={{ backgroundColor: "#d9eaa3", color: "#253000" }}>
-                  {tag.charAt(0).toUpperCase() + tag.slice(1)} ×
-                </button>
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {TAG_SUGGESTIONS
-                .filter((t) => !form.likes.includes(t.toLowerCase()))
-                .slice(0, 4)
-                .map((t) => (
-                  <button key={t} onClick={() => addTag("likes", t)}
-                    className="px-2.5 py-1 rounded-full text-[11px] font-medium"
-                    style={{ backgroundColor: "#f0eee7", color: "#46483c" }}>
-                    + {t}
-                  </button>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5 block">Loves these</label>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {form.likes.map(tag => (
+                  <span key={tag} className="px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-bold flex items-center gap-1">
+                    {tag}
+                    <button onClick={() => removeTag("likes", tag)} className="material-symbols-rounded text-[14px]">close</button>
+                  </span>
                 ))}
-            </div>
-          </div>
-
-          {/* Dislikes editing */}
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="material-symbols-rounded" style={{ fontSize: 16, color: "#95454e" }}>block</span>
-              <span className="text-xs font-semibold" style={{ color: "#95454e" }}>Dislikes</span>
-            </div>
-            <div className="flex flex-wrap gap-1.5 mb-2">
-              {form.dislikes.map((tag) => (
-                <button key={tag} onClick={() => removeTag("dislikes", tag)}
-                  className="px-2.5 py-1 rounded-full text-[11px] font-medium flex items-center gap-1"
-                  style={{ backgroundColor: "#ffdadb", color: "#55141f" }}>
-                  {tag.charAt(0).toUpperCase() + tag.slice(1)} ×
-                </button>
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {["Mushrooms", "Olives", "Cilantro", "Lamb", "Tofu"]
-                .filter((t) => !form.dislikes.includes(t.toLowerCase()))
-                .slice(0, 3)
-                .map((t) => (
-                  <button key={t} onClick={() => addTag("dislikes", t)}
-                    className="px-2.5 py-1 rounded-full text-[11px] font-medium"
-                    style={{ backgroundColor: "#f0eee7", color: "#46483c" }}>
-                    + {t}
-                  </button>
-                ))}
-            </div>
-          </div>
-
-          {/* Spice tolerance slider */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-rounded" style={{ fontSize: 16, color: "#944a1b" }}>
-                  local_fire_department
-                </span>
-                <span className="text-xs font-semibold" style={{ color: "#944a1b" }}>Spice Tolerance</span>
               </div>
-              <span className="text-xs font-bold" style={{ color: "#1b1c18" }}>
-                {form.spice_tolerance <= 2 ? "Low" : form.spice_tolerance <= 3 ? "Medium" : "High"}
-              </span>
+              <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide">
+                {TAG_SUGGESTIONS.filter(t => !form.likes.includes(t.toLowerCase())).map(t => (
+                  <button 
+                    key={t}
+                    onClick={() => addTag("likes", t)}
+                    className="whitespace-nowrap px-3 py-1 bg-white border border-slate-100 rounded-full text-[11px] font-bold text-slate-500 hover:border-emerald-300"
+                  >
+                    + {t}
+                  </button>
+                ))}
+              </div>
             </div>
-            <input
-              type="range" min={1} max={5} step={1}
-              value={form.spice_tolerance}
-              onChange={(e) => setForm((f) => ({ ...f, spice_tolerance: parseInt(e.target.value) }))}
-              className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
-              style={{
-                background: `linear-gradient(to right, #56642b ${((form.spice_tolerance - 1) / 4) * 100}%, #e4e2dc ${((form.spice_tolerance - 1) / 4) * 100}%)`,
-              }}
-            />
-          </div>
 
-          {/* Save button */}
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className={saved ? "btn-tonal w-full" : "btn-primary w-full"}>
-            {saved ? "✓ Saved!" : saving ? "Saving…" : "Save Changes"}
-          </button>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5 block">Spice Level</label>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map(v => (
+                  <button
+                    key={v}
+                    onClick={() => setForm({...form, spice_tolerance: v})}
+                    className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                      form.spice_tolerance === v ? "bg-emerald-700 text-white shadow-md" : "bg-slate-50 text-slate-400"
+                    }`}
+                  >
+                    {v}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button 
+              onClick={handleSave}
+              disabled={saving}
+              className="w-full h-12 bg-emerald-800 text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-emerald-100 active:scale-95 transition-transform"
+            >
+              {saving ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 
+               saved ? <span className="material-symbols-rounded">done</span> : "Save Changes"}
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -241,33 +140,34 @@ function UserCard({ user, index, onSave }) {
 }
 
 export default function PreferencesScreen() {
-  const [users, setUsers]     = useState([]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const load = () =>
-    getUsers().then((r) => setUsers(r.data)).finally(() => setLoading(false));
+  const loadData = async () => {
+    try {
+      const response = await getUsers();
+      setUsers(response.data);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { loadData(); }, []);
 
-  if (loading) return <Loader text="Loading preferences…" />;
+  const handleUpdateUser = async (id, payload) => {
+    await updateUser(id, payload);
+    loadData();
+  };
+
+  if (loading) return <Loader />;
 
   return (
-    <div className="flex flex-col min-h-screen pb-24" style={{ backgroundColor: "#fbf9f2" }}>
-      <TopBar />
-
-      <div className="px-5 mt-2">
-        <h1 className="text-2xl font-bold mb-1" style={{ color: "#1b1c18" }}>
-          Household Members
-        </h1>
-        <p className="text-sm mb-5" style={{ color: "#46483c" }}>
-          Manage taste preferences and dietary needs for everyone in your group.
-        </p>
-
-        <div className="flex flex-col gap-3">
-          {users.map((user, i) => (
-            <UserCard key={user.id} user={user} index={i} onSave={load} />
-          ))}
-        </div>
+    <div className="pb-24 animate-fade-in">
+      <TopBar title="The Household" subtitle="Tailor the ML recommendations" />
+      <div className="px-5 mt-6 space-y-4">
+        {users.map((user, idx) => (
+          <UserCard key={user.id} user={user} index={idx} onSave={handleUpdateUser} />
+        ))}
       </div>
     </div>
   );
