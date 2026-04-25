@@ -3,17 +3,7 @@ main.py — FastAPI application entry point.
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from database import engine, Base, SessionLocal
-from models import User, Meal, MealHistory, Satisfaction  # noqa — register with metadata
 from routers import users, recommend, history
-from seed_data import seed
-
-# Create tables
-Base.metadata.create_all(bind=engine)
-
-# Seed on startup
-with SessionLocal() as db:
-    seed(db)
 
 app = FastAPI(
     title="MealSync API",
