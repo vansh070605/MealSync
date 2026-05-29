@@ -3,11 +3,12 @@ import { useNavigate } from "react-router-dom";
 import TopBar from "../components/TopBar";
 
 const CATEGORIES = {
-  "Grains & Staples": ["Rice", "Flour", "Maggi", "Bread", "Pav", "Noodles", "Puffed Rice", "Flattened Rice", "Semolina", "Macaroni"],
-  "Vegetables": ["Potato", "Onion", "Tomato", "Peas", "Capsicum", "Carrot", "Cabbage", "Cauliflower", "Spinach", "Okra", "Eggplant", "Mushroom", "Bottle Gourd", "Bitter Gourd", "Ivy Gourd", "Taro Root", "Radish"],
-  "Proteins": ["Paneer", "Chickpeas", "Yellow Lentils", "Kidney Beans", "Red Lentils", "Black Chickpeas", "Moong Dal", "Toor Dal", "Chana Dal", "Soya Chunks", "Eggs", "Chicken", "Mutton", "Lobster"],
-  "Dairy & Pantry": ["Curd", "Butter", "Cream", "Cheese", "Cashew", "Coconut", "Peanuts", "Ghee", "Yogurt", "Jam", "Ketchup", "Soy Sauce"]
+  "Grains & Staples": ["Rice", "Flour", "Maggi", "Bread", "Pav", "Noodles", "Puffed Rice", "Flattened Rice", "Semolina", "Macaroni", "Dosa Batter", "Leftover Idli"],
+  "Vegetables": ["Potato", "Onion", "Tomato", "Peas", "Capsicum", "Carrot", "Cabbage", "Cauliflower", "Spinach", "Okra", "Eggplant", "Mushroom", "Bottle Gourd", "Bitter Gourd", "Ivy Gourd", "Taro Root", "Radish", "Green Beans", "Leftover Veggies"],
+  "Proteins": ["Paneer", "Chickpeas", "Yellow Lentils", "Kidney Beans", "Red Lentils", "Black Chickpeas", "Moong Dal", "Toor Dal", "Chana Dal", "Soya Chunks", "Eggs", "Chicken", "Mutton", "Lobster", "Moth Beans", "Soya Chaap", "Black Lentils", "Besan"],
+  "Dairy & Pantry": ["Curd", "Butter", "Cream", "Cheese", "Cashew", "Coconut", "Peanuts", "Ghee", "Yogurt", "Jam", "Ketchup", "Soy Sauce", "Fanta"]
 };
+
 
 export default function InputScreen() {
   const navigate = useNavigate();

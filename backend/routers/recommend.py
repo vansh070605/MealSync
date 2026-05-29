@@ -16,11 +16,9 @@ def recommend(kitchen_state: KitchenState, db: Session = Depends(get_db)):
         budget_tier=int(kitchen_state.budget_per_person / 5) or 1,
         mood=kitchen_state.mood
     )
-    if not results:
-        raise HTTPException(status_code=404, detail="No matches found.")
     
     top_meals = []
-    for r in results:
+    for r in results.get("top_meals", []):
         top_meals.append(
             MealScore(
                 meal_id=r["meal_id"],
@@ -37,7 +35,14 @@ def recommend(kitchen_state: KitchenState, db: Session = Depends(get_db)):
                 per_user_scores={}
             )
         )
-    return RecommendationResponse(top_meals=top_meals, fairness_weights={})
+    
+    suggestions = results.get("suggestions", [])
+    return RecommendationResponse(
+        top_meals=top_meals,
+        fairness_weights={},
+        suggestions=suggestions
+    )
+
 
 @router.get("/history")
 def get_history(limit: int = 20, db: Session = Depends(get_db)):

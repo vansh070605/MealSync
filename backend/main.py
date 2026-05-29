@@ -44,4 +44,4 @@ if __name__ == "__main__":
     # Use environment variables for production ports
     port = int(os.getenv("PORT", 8000))
     # In production, we use 0.0.0.0 to be accessible externally
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)

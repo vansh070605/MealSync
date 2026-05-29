@@ -1,4 +1,6 @@
 // pages/Home.jsx — Matches the Stitch "MealSync - Home" screen exactly
+import OnlineAvatars from "../components/OnlineAvatars";
+import { usePresence } from "../hooks/useFirebasePresence";
 // Layout: TopBar → Hero title → Avatars row → Green CTA card → Last Meal card → Stats row → Bottom nav
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -9,6 +11,7 @@ import { getUsers, getHistory } from "../api";
 export default function Home() {
   const navigate = useNavigate();
   const { users, setUsers } = useStore();
+  const { onlineCount } = usePresence();
   const [lastMeal, setLastMeal] = useState(null);
 
   useEffect(() => {
@@ -33,24 +36,7 @@ export default function Home() {
         </p>
 
         {/* Avatar stack row */}
-        <div className="flex items-center gap-1.5 mt-4">
-          <div className="flex -space-x-2">
-            {users.slice(0, 6).map((u, i) => (
-              <div key={u.id}
-                   className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ring-2 ring-white"
-                   style={{
-                     backgroundColor: ["#8a9a5b", "#ff9e68", "#d57881", "#bdce89", "#56642b", "#76786b"][i % 6],
-                     color: "#ffffff",
-                     zIndex: 10 - i,
-                   }}>
-                {u.name.charAt(0)}
-              </div>
-            ))}
-          </div>
-          <span className="text-xs font-medium ml-2" style={{ color: "#56642b" }}>
-            {users.length} members ready
-          </span>
-        </div>
+        <OnlineAvatars />
       </div>
 
       {/* Green CTA Card — "Feeling hungry?" */}

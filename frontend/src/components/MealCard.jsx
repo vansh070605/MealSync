@@ -59,80 +59,67 @@ export default function MealCard({ meal, onSelect }) {
   // Sanitization: Remove leading hyphens or weird characters from the name
   const cleanName = meal.meal_name.replace(/^[- \t]+/, "").trim();
 
-  const getImageUrl = () => {
-    // 1. Try to find a verified Unsplash ID
-    const unsplashId = MASTER_IMAGE_MAP[cleanName];
-    if (unsplashId) {
-      return `https://images.unsplash.com/${unsplashId}?auto=format&fit=crop&q=80&w=800`;
-    }
-
-    // 2. High-quality Pexels search for ALL other dishes
-    // This uses a unique keyword set to prevent "stairs" or "AI"
-    const seed = encodeURIComponent(cleanName.toLowerCase());
-    return `https://loremflickr.com/800/600/indian,food,${seed}/all?lock=${meal.meal_id || 1}`;
-  };
-
-  const [imgSrc, setImgSrc] = useState(getImageUrl());
-
-  const handleError = () => {
-    // Ultimate fallback to a beautiful Indian food spread
-    setImgSrc("https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&q=80&w=800");
-  };
-
   return (
-    <div className="bg-white rounded-[2.5rem] overflow-hidden shadow-card border border-slate-50 transition-all hover:shadow-lift active:scale-[0.98] animate-slide-up group mb-4">
-      <div className="relative h-60 w-full overflow-hidden bg-slate-100">
-        <img
-          src={imgSrc}
-          alt={cleanName}
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-          onError={handleError}
-        />
-
-        <div className="absolute top-5 left-5 flex gap-2">
-          <div className="px-4 py-1.5 bg-white/90 backdrop-blur shadow-sm rounded-full flex items-center gap-2">
-            <span className="material-symbols-rounded text-emerald-600 text-lg">timer</span>
-            <span className="text-xs font-bold text-slate-800">{meal.prep_time}m</span>
-          </div>
-          <div className="px-4 py-1.5 bg-emerald-600 text-white shadow-lg rounded-full flex items-center gap-2">
-            <span className="material-symbols-rounded text-lg">bolt</span>
+    <div className="bg-white rounded-[2rem] overflow-hidden shadow-card border border-slate-100 transition-all hover:shadow-lift active:scale-[0.98] animate-slide-up group mb-4 p-6">
+      {/* Header Info */}
+      <div className="flex justify-between items-start mb-3 gap-4">
+        <div>
+          <span className="px-2.5 py-1 bg-slate-100 text-slate-500 rounded-lg text-[9px] font-black uppercase tracking-widest">
+            {meal.difficulty || 'Easy'}
+          </span>
+          <h3 className="text-2xl font-black text-slate-800 tracking-tight mt-1">{cleanName}</h3>
+        </div>
+        <div className="flex flex-col items-end gap-1.5 shrink-0">
+          <div className="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full flex items-center gap-1.5">
+            <span className="material-symbols-rounded text-base">bolt</span>
             <span className="text-xs font-bold">{meal.score}% Harmony</span>
+          </div>
+          <div className="px-3 py-1 bg-slate-50 text-slate-600 rounded-full flex items-center gap-1.5">
+            <span className="material-symbols-rounded text-base">timer</span>
+            <span className="text-xs font-bold">{meal.prep_time}m</span>
           </div>
         </div>
       </div>
 
-      <div className="p-7">
-        <div className="flex justify-between items-center mb-3">
-          <h3 className="text-2xl font-black text-slate-800 tracking-tight">{cleanName}</h3>
-          <div className="px-3 py-1 bg-slate-100 text-slate-500 rounded-lg text-[10px] font-black uppercase tracking-widest">
-            {meal.difficulty || 'Easy'}
-          </div>
-        </div>
+      {/* Explanation Box */}
+      <div className="bg-emerald-50/40 p-4 rounded-xl mb-4 border border-emerald-100/30">
+        <p className="text-xs text-emerald-900 leading-relaxed font-medium">
+          <span className="material-symbols-rounded text-sm align-middle mr-1.5">info</span>
+          {meal.explanation}
+        </p>
+      </div>
 
-        <div className="bg-emerald-50/50 p-4 rounded-2xl mb-6 border border-emerald-100/50">
-          <p className="text-sm text-emerald-900 leading-relaxed font-medium">
-            <span className="material-symbols-rounded text-base align-middle mr-2">info</span>
-            {meal.explanation}
-          </p>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <div className="flex -space-x-3">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="w-8 h-8 rounded-full border-2 border-white overflow-hidden shadow-sm">
-                <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${cleanName + i}`} alt="user" />
-              </div>
+      {/* Recipe / Ingredients */}
+      {meal.ingredients && meal.ingredients.length > 0 && (
+        <div className="mb-6">
+          <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Ingredients</h4>
+          <div className="flex flex-wrap gap-1.5">
+            {meal.ingredients.map((ing) => (
+              <span key={ing} className="px-2.5 py-1 bg-slate-50 text-slate-700 border border-slate-100 rounded-lg text-xs font-medium">
+                {ing}
+              </span>
             ))}
           </div>
-
-          <button
-            onClick={() => onSelect(meal)}
-            className="flex items-center gap-2 px-8 py-4 bg-slate-900 text-white rounded-[1.5rem] text-sm font-black hover:bg-emerald-800 transition-all shadow-lg hover:shadow-emerald-200"
-          >
-            Decide on this
-            <span className="material-symbols-rounded">arrow_forward</span>
-          </button>
         </div>
+      )}
+
+      {/* Action Footer */}
+      <div className="flex items-center justify-between border-t border-slate-50 pt-4">
+        <div className="flex -space-x-2.5">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="w-7 h-7 rounded-full border-2 border-white overflow-hidden shadow-sm">
+              <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${cleanName + i}`} alt="user" />
+            </div>
+          ))}
+        </div>
+
+        <button
+          onClick={() => onSelect(meal)}
+          className="flex items-center gap-2 px-6 py-3.5 bg-slate-900 text-white rounded-xl text-xs font-black hover:bg-emerald-800 transition-all shadow-md active:scale-95"
+        >
+          Decide on this
+          <span className="material-symbols-rounded text-sm">arrow_forward</span>
+        </button>
       </div>
     </div>
   );

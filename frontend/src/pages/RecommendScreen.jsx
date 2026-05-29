@@ -5,8 +5,9 @@ import API_BASE_URL from "../apiConfig";
 import MealCard from "../components/MealCard";
 
 export default function RecommendScreen() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [recommendations, setRecommendations] = useState([]);
+  const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedMeal, setSelectedMeal] = useState(null);
@@ -15,7 +16,7 @@ export default function RecommendScreen() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const ingredients = searchParams.get("ingredients")?.split(",") || [];
+    const ingredients = searchParams.get("ingredients")?.split(",").filter(Boolean) || [];
     const time = parseInt(searchParams.get("time")) || 60;
     const budget = parseInt(searchParams.get("budget")) || 50;
     const mood = searchParams.get("mood") || "Normal";
@@ -33,6 +34,7 @@ export default function RecommendScreen() {
     axios.post(`${API_BASE_URL}/recommend`, kitchenState)
       .then(res => {
         setRecommendations(res.data.top_meals || []);
+        setSuggestions(res.data.suggestions || []);
         setLoading(false);
       })
       .catch(err => {
@@ -41,6 +43,16 @@ export default function RecommendScreen() {
         setLoading(false);
       });
   }, [searchParams]);
+
+  const handleAddIngredient = (ing) => {
+    const currentIngredients = searchParams.get("ingredients")?.split(",").filter(Boolean) || [];
+    if (!currentIngredients.includes(ing)) {
+      const newIngredients = [...currentIngredients, ing];
+      const newParams = new URLSearchParams(searchParams);
+      newParams.set("ingredients", newIngredients.join(","));
+      setSearchParams(newParams);
+    }
+  };
 
   const handleLogMeal = () => {
     if (!selectedMeal) return;
@@ -91,9 +103,9 @@ export default function RecommendScreen() {
 
         {!error && recommendations.length === 0 && (
           <div className="bg-amber-50 border-2 border-amber-100 p-8 rounded-[3rem] text-center">
-            <span className="material-symbols-rounded text-amber-400 text-5xl mb-4">Search</span>
+            <span className="material-symbols-rounded text-amber-400 text-5xl mb-4">search</span>
             <h3 className="text-amber-900 font-black text-xl">No exact matches found</h3>
-            <p className="text-amber-700 text-sm mt-2">Try adding more ingredients or increasing your time limit!</p>
+            <p className="text-amber-700 text-sm mt-2">Try adding more ingredients or select from the unlockable suggestions below!</p>
           </div>
         )}
 
@@ -108,10 +120,49 @@ export default function RecommendScreen() {
                 ["Vansh", "Shashwat", "Rajasthani", "Atharva", "Anni", "Prajjwal"].forEach(u => init[u] = 80);
                 setRatings(init);
               }} 
+              onAddIngredient={handleAddIngredient}
             />
           ))}
         </div>
+
+        {/* Suggestions / Unlockable meals */}
+        {!error && suggestions.length > 0 && (
+          <div className="mt-12 space-y-6">
+            <div className="border-t border-slate-100 pt-8">
+              <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-[10px] font-black uppercase tracking-widest">Smart Assistant</span>
+              <h2 className="text-2xl font-black text-slate-800 mt-2 tracking-tight">Unlockable Recipes</h2>
+              <p className="text-slate-400 font-bold text-xs mt-1">Add just a few missing ingredients to unlock these dishes:</p>
+            </div>
+
+            <div className="space-y-4">
+              {suggestions.map((sug) => (
+                <div key={sug.meal_id} className="bg-white border border-slate-100 rounded-[2rem] p-6 shadow-sm hover:shadow-md transition-all">
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="text-lg font-black text-slate-800 tracking-tight">{sug.meal_name}</h3>
+                    <span className="px-2.5 py-1 bg-amber-50 text-amber-700 rounded-lg text-[9px] font-bold uppercase">
+                      {sug.score}% Harmony
+                    </span>
+                  </div>
+                  <p className="text-slate-500 text-xs font-medium mb-4">{sug.explanation}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {sug.missing_ingredients.map((ing) => (
+                      <button
+                        key={ing}
+                        onClick={() => handleAddIngredient(ing)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl text-[11px] font-bold transition-all hover:scale-105 active:scale-95 border border-emerald-100"
+                      >
+                        <span className="material-symbols-rounded text-sm">add</span>
+                        Add {ing}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
+
 
       {/* Rating Modal */}
       {selectedMeal && (

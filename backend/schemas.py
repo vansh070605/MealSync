@@ -67,9 +67,19 @@ class RecommendationRequest(BaseModel):
     kitchen_state: KitchenState
 
 
+class MealSuggestion(BaseModel):
+    meal_id: int
+    meal_name: str
+    score: float
+    missing_ingredients: List[str]
+    explanation: str
+
+
 class RecommendationResponse(BaseModel):
     top_meals: List[MealScore]
     fairness_weights: dict   # user_name -> weight used
+    suggestions: List[MealSuggestion] = []
+
 
 
 # ── History ──────────────────────────────────────────────────────────────────

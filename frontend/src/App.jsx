@@ -1,6 +1,7 @@
 // App.jsx — Root component with routing matching Stitch screen flow
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { StoreProvider } from "./store";
+import { AuthProvider } from "./context/AuthContext";
 import BottomNav from "./components/BottomNav";
 import Home from "./pages/Home";
 import InputScreen from "./pages/InputScreen";
@@ -10,8 +11,9 @@ import PreferencesScreen from "./pages/PreferencesScreen";
 
 export default function App() {
   return (
-    <StoreProvider>
-      <BrowserRouter>
+    <AuthProvider>
+      <StoreProvider>
+        <BrowserRouter>
         <div className="relative max-w-[480px] mx-auto min-h-screen overflow-x-hidden"
              style={{ backgroundColor: "#fbf9f2" }}>
           <Routes>
@@ -25,5 +27,6 @@ export default function App() {
         </div>
       </BrowserRouter>
     </StoreProvider>
+    </AuthProvider>
   );
 }
