@@ -6,7 +6,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 # Use DATABASE_URL from environment if available (Production), else use SQLite locally
-SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./mealsync.db")
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./mealsync_v2.db")
 
 # Render/Heroku often provide 'postgres://' URLs which SQLAlchemy 1.4+ requires as 'postgresql://'
 if SQLALCHEMY_DATABASE_URL.startswith("postgres://"):

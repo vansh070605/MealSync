@@ -4,7 +4,7 @@ main.py — FastAPI application entry point.
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import users, recommend, history
+from routers import recommend
 from database import engine, Base, SessionLocal
 from seed_data import seed
 import uvicorn
@@ -19,7 +19,7 @@ finally:
 
 app = FastAPI(
     title="MealSync API",
-    description="Collaborative Meal Decision Engine for 6 flatmates",
+    description="Collaborative Meal Decision Engine for flats",
     version="1.0.0",
 )
 
@@ -32,9 +32,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(users.router)
 app.include_router(recommend.router)
-app.include_router(history.router)
 
 @app.get("/", tags=["Root"])
 def root():

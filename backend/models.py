@@ -8,6 +8,16 @@ from datetime import datetime, timezone
 from database import Base
 
 
+class Flat(Base):
+    __tablename__ = "flats"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    users = relationship("User", back_populates="flat")
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -18,8 +28,10 @@ class User(Base):
     dislikes_json = Column(Text, default="[]")
     spice_tolerance = Column(Integer, default=3)      # 1–5
     effort_tolerance = Column(String(10), default="medium")  # low/medium/high
+    flat_id = Column(Integer, ForeignKey("flats.id"), nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
+    flat = relationship("Flat", back_populates="users")
     satisfactions = relationship("Satisfaction", back_populates="user")
 
     @property

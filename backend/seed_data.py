@@ -15,9 +15,21 @@ USERS = [
 ]
 
 def seed(db: Session) -> None:
+    from models import Flat
+    
+    # 1. Ensure Flat exists
+    if db.query(Flat).count() == 0:
+        demo_flat = Flat(name="Demo Flat")
+        db.add(demo_flat)
+        db.commit()
+        db.refresh(demo_flat)
+        print("✅ Seeded Demo Flat.")
+    else:
+        demo_flat = db.query(Flat).first()
+
     if db.query(User).count() == 0:
         for u in USERS:
-            user = User(name=u["name"], avatar=u["avatar"], spice_tolerance=u["spice_tolerance"])
+            user = User(name=u["name"], avatar=u["avatar"], spice_tolerance=u["spice_tolerance"], flat_id=demo_flat.id)
             user.likes = u["likes"]
             user.dislikes = u["dislikes"]
             db.add(user)

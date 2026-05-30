@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import axios from "axios";
-import API_BASE_URL from "../apiConfig";
-import MealCard from "../components/MealCard";
+import { recommend, selectMeal, getUsers, getHistory, addGroceryItem } from "../api";
+import { useStore } from "../store";
+import { useAuth } from "../context/AuthContext";
+import TopBar from "../components/TopBar";
 
 export default function RecommendScreen() {
+  const { flatId, users, setUsers } = useStore();
+  const { userProfile } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [recommendations, setRecommendations] = useState([]);
   const [suggestions, setSuggestions] = useState([]);
@@ -21,28 +24,48 @@ export default function RecommendScreen() {
     const budget = parseInt(searchParams.get("budget")) || 50;
     const mood = searchParams.get("mood") || "Normal";
 
-    const kitchenState = {
-      available_ingredients: ingredients,
-      time_available: time,
-      budget_per_person: budget,
-      mood: mood
-    };
+    const fetchRecommendations = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        // Fetch household's cooking history
+        let historyData = [];
+        if (flatId) {
+          const histRes = await getHistory(flatId);
+          historyData = histRes.data || [];
+        }
 
-    setLoading(true);
-    setError(null);
-    
-    axios.post(`${API_BASE_URL}/recommend`, kitchenState)
-      .then(res => {
+        // Fetch users if not loaded
+        let currentUsers = users;
+        if (flatId && users.length === 0) {
+          const usersRes = await getUsers(flatId);
+          setUsers(usersRes.data);
+          currentUsers = usersRes.data;
+        }
+
+        const kitchenState = {
+          available_ingredients: ingredients,
+          time_available: time,
+          budget_per_person: budget,
+          mood: mood,
+          flat_id: flatId,
+          users: currentUsers,
+          meal_history: historyData
+        };
+
+        const res = await recommend(kitchenState);
         setRecommendations(res.data.top_meals || []);
         setSuggestions(res.data.suggestions || []);
-        setLoading(false);
-      })
-      .catch(err => {
+      } catch (err) {
         console.error("Failed to fetch recommendations:", err);
         setError("Could not connect to the backend. Please ensure VITE_API_URL is set in Vercel.");
+      } finally {
         setLoading(false);
-      });
-  }, [searchParams]);
+      }
+    };
+
+    fetchRecommendations();
+  }, [searchParams, flatId]);
 
   const handleAddIngredient = (ing) => {
     const currentIngredients = searchParams.get("ingredients")?.split(",").filter(Boolean) || [];
@@ -54,17 +77,28 @@ export default function RecommendScreen() {
     }
   };
 
+  const handleAddToGroceryList = (ing) => {
+    if (!flatId) return;
+    addGroceryItem(flatId, { name: ing, added_by: userProfile?.name || "Decide Screen" })
+      .then(() => alert(`${ing} ration ki list mein add ho gaya! 🛒`))
+      .catch(err => {
+        console.error("Failed to add to grocery list:", err);
+        alert("Ration list mein add karne mein dikkat aayi.");
+      });
+  };
+
   const handleLogMeal = () => {
     if (!selectedMeal) return;
     setIsSubmitting(true);
     
     const payload = {
       meal_id: selectedMeal.meal_id,
+      meal_name: selectedMeal.meal_name,
       notes: "Cooked with group! " + (selectedMeal.explanation || ""),
       satisfaction_scores: ratings
     };
 
-    axios.post(`${API_BASE_URL}/history`, payload)
+    selectMeal(flatId, payload)
       .then(() => {
         setIsSubmitting(false);
         setSelectedMeal(null);
@@ -88,10 +122,9 @@ export default function RecommendScreen() {
 
   return (
     <div className="min-h-screen bg-[#FDFCF8] pb-24">
-      <div className="max-w-md mx-auto px-6 pt-12">
-        <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-black uppercase tracking-widest">Today's ML Pick</span>
-        <h1 className="text-4xl font-black text-slate-900 mt-2 tracking-tight">Our Best Matches</h1>
-        <p className="text-slate-400 font-bold text-sm mt-2 mb-8">Top recommendations tailored for your group.</p>
+      <TopBar subtitle="Our Best Matches" />
+      <div className="max-w-md mx-auto px-6 pt-6">
+        <p className="text-slate-400 font-bold text-sm text-center mb-8">Top recommendations tailored for your group.</p>
 
         {error && (
           <div className="bg-rose-50 border-2 border-rose-100 p-6 rounded-[2rem] text-center mb-8">
@@ -109,19 +142,40 @@ export default function RecommendScreen() {
           </div>
         )}
 
-        <div className="space-y-4">
+        <div className="space-y-6">
           {recommendations.map((meal) => (
-            <MealCard 
-              key={meal.meal_id} 
-              meal={meal} 
-              onSelect={(m) => {
-                setSelectedMeal(m);
-                const init = {};
-                ["Vansh", "Shashwat", "Rajasthani", "Atharva", "Anni", "Prajjwal"].forEach(u => init[u] = 80);
-                setRatings(init);
-              }} 
-              onAddIngredient={handleAddIngredient}
-            />
+            <div key={meal.meal_id} className="bg-white border border-slate-100 rounded-[2rem] overflow-hidden shadow-sm hover:shadow-md transition-all">
+              <img 
+                src={`https://loremflickr.com/800/400/food,indian?lock=${meal.meal_id}`} 
+                alt={meal.meal_name} 
+                className="w-full h-44 object-cover"
+                loading="lazy"
+              />
+              <div className="p-6">
+                <div className="flex justify-between items-start mb-3">
+                  <h3 className="text-lg font-black text-slate-800 tracking-tight">{meal.meal_name}</h3>
+                  <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-lg text-[9px] font-bold uppercase">
+                    {meal.score}% Harmony
+                  </span>
+                </div>
+                <p className="text-slate-500 text-xs font-medium mb-4">{meal.explanation}</p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => {
+                      setSelectedMeal(meal);
+                      const init = {};
+                      const members = users.length > 0 ? users.map(u => u.name) : ["Vansh", "Priya"];
+                      members.forEach(u => init[u] = 80);
+                      setRatings(init);
+                    }}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-[11px] font-bold transition-all active:scale-95 shadow-md"
+                  >
+                    Decide on this
+                    <span className="material-symbols-rounded text-sm">arrow_forward</span>
+                  </button>
+                </div>
+              </div>
+            </div>
           ))}
         </div>
 
@@ -134,27 +188,43 @@ export default function RecommendScreen() {
               <p className="text-slate-400 font-bold text-xs mt-1">Add just a few missing ingredients to unlock these dishes:</p>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-6">
               {suggestions.map((sug) => (
-                <div key={sug.meal_id} className="bg-white border border-slate-100 rounded-[2rem] p-6 shadow-sm hover:shadow-md transition-all">
-                  <div className="flex justify-between items-start mb-3">
-                    <h3 className="text-lg font-black text-slate-800 tracking-tight">{sug.meal_name}</h3>
-                    <span className="px-2.5 py-1 bg-amber-50 text-amber-700 rounded-lg text-[9px] font-bold uppercase">
-                      {sug.score}% Harmony
-                    </span>
-                  </div>
-                  <p className="text-slate-500 text-xs font-medium mb-4">{sug.explanation}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {sug.missing_ingredients.map((ing) => (
-                      <button
-                        key={ing}
-                        onClick={() => handleAddIngredient(ing)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl text-[11px] font-bold transition-all hover:scale-105 active:scale-95 border border-emerald-100"
-                      >
-                        <span className="material-symbols-rounded text-sm">add</span>
-                        Add {ing}
-                      </button>
-                    ))}
+                <div key={sug.meal_id} className="bg-white border border-slate-100 rounded-[2rem] overflow-hidden shadow-sm hover:shadow-md transition-all">
+                  <img 
+                    src={`https://loremflickr.com/800/400/food,indian?lock=${sug.meal_id}`} 
+                    alt={sug.meal_name} 
+                    className="w-full h-36 object-cover"
+                    loading="lazy"
+                  />
+                  <div className="p-6">
+                    <div className="flex justify-between items-start mb-3">
+                      <h3 className="text-lg font-black text-slate-800 tracking-tight">{sug.meal_name}</h3>
+                      <span className="px-2.5 py-1 bg-amber-50 text-amber-700 rounded-lg text-[9px] font-bold uppercase">
+                        {sug.score}% Harmony
+                      </span>
+                    </div>
+                    <p className="text-slate-500 text-xs font-medium mb-4">{sug.explanation}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {sug.missing_ingredients.map((ing) => (
+                        <div key={ing} className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleAddIngredient(ing)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl text-[11px] font-bold transition-all hover:scale-105 active:scale-95 border border-emerald-100"
+                          >
+                            <span className="material-symbols-rounded text-sm">add</span>
+                            Add {ing}
+                          </button>
+                          <button
+                            onClick={() => handleAddToGroceryList(ing)}
+                            className="flex items-center justify-center p-2 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl transition-all border border-amber-100 active:scale-95"
+                            title="Add to Grocery List"
+                          >
+                            <span className="material-symbols-rounded text-sm" style={{ fontSize: 16 }}>shopping_cart</span>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -162,7 +232,6 @@ export default function RecommendScreen() {
           </div>
         )}
       </div>
-
 
       {/* Rating Modal */}
       {selectedMeal && (

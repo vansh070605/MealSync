@@ -82,9 +82,12 @@ def normalize_ingredient(ing: str) -> str:
         return "besan"
     return ing
 
-def get_recommendations(db: Session, available_ingredients: list, max_prep_time: int, budget_tier: int, mood: str):
+def get_recommendations(db: Session, available_ingredients: list, max_prep_time: int, budget_tier: int, mood: str, users: list = None, meal_history: list = None):
     meals = db.query(Meal).all()
-    users = db.query(User).all()
+    if users is None:
+        users = []
+    if meal_history is None:
+        meal_history = []
     
     if not meals or not users:
         return {"top_meals": [], "suggestions": []}
@@ -116,17 +119,17 @@ def get_recommendations(db: Session, available_ingredients: list, max_prep_time:
             score = 70 # Start with a neutral high base
             
             # Boost if they like ingredients
-            user_likes = {l.lower() for l in user.likes}
+            user_likes = {l.lower() for l in user.get("likes", [])}
             if any(ing in user_likes for ing in meal_ingredients_normalized):
                 score += 15
             
             # Penalize if they dislike ingredients
-            user_dislikes = {d.lower() for d in user.dislikes}
+            user_dislikes = {d.lower() for d in user.get("dislikes", [])}
             if any(ing in user_dislikes for ing in meal_ingredients_normalized):
                 score -= 40
             
             # Spice Preference
-            spice_diff = abs(meal.prep_time % 5 - user.spice_tolerance)
+            spice_diff = abs(meal.prep_time % 5 - user.get("spice_tolerance", 3))
             score -= (spice_diff * 5)
             
             user_scores.append(max(0, min(100, score)))
@@ -135,30 +138,56 @@ def get_recommendations(db: Session, available_ingredients: list, max_prep_time:
         min_score = min(user_scores)
         harmony_score = (avg_score * 0.6 + min_score * 0.4)
 
+        # 3. Apply ML Feedback Loop (history penalty / boost)
+        meal_ratings = []
+        for entry in meal_history:
+            if entry.get("meal_id") == meal.id:
+                scores_dict = entry.get("satisfaction_scores") or entry.get("satisfactions")
+                if scores_dict and isinstance(scores_dict, dict):
+                    valid_scores = [float(val) for val in scores_dict.values() if val is not None]
+                    if valid_scores:
+                        meal_ratings.append(sum(valid_scores) / len(valid_scores))
+        
+        history_boost = 0
+        history_explanation = ""
+        if meal_ratings:
+            avg_historical = sum(meal_ratings) / len(meal_ratings)
+            if avg_historical >= 75.0:
+                history_boost = 15
+                history_explanation = f" (Boosted based on past high rating of {round(avg_historical)}%)"
+            elif avg_historical < 50.0:
+                history_boost = -35
+                history_explanation = f" (Penalized due to low past satisfaction of {round(avg_historical)}%)"
+
+        harmony_score = max(0, min(100, harmony_score + history_boost))
+
         # Enforce strict ingredient matching
         if len(missing) == 0:
-            # 100% Match: feasible to cook!
-            meal_scores.append({
-                "meal_id": meal.id,
-                "name": meal.name,
-                "score": round(harmony_score),
-                "prep_time": meal.prep_time,
-                "budget_tier": int(meal.cost_estimate / 5) or 1,
-                "ingredients": meal.ingredients,
-                "explanation": f"Matches all required ingredients! High group harmony at {round(harmony_score)}%."
-            })
+          # If the user selected ingredients, make sure the meal actually uses at least one of them
+          if available_set and not meal_selectable.intersection(available_set):
+              continue
+              
+          # 100% Match: feasible to cook!
+          meal_scores.append({
+              "meal_id": meal.id,
+              "name": meal.name,
+              "score": round(harmony_score),
+              "prep_time": meal.prep_time,
+              "budget_tier": int(meal.cost_estimate / 5) or 1,
+              "ingredients": meal.ingredients,
+              "explanation": f"Matches all required ingredients! High group harmony at {round(harmony_score)}%{history_explanation}."
+          })
         elif len(missing) <= 2 and meal_selectable.intersection(available_set):
-            # Almost matchable: Suggest to the user
-            # Format nicely for presentation
-            display_missing = [m.title() for m in missing]
-            suggestions.append({
-                "meal_id": meal.id,
-                "meal_name": meal.name,
-                "score": round(harmony_score),
-                "missing_ingredients": display_missing,
-                "explanation": f"Missing only {', '.join(display_missing)}. Add these to unlock!"
-            })
-
+          # Almost matchable: Suggest to the user
+          # Format nicely for presentation
+          display_missing = [m.title() for m in missing]
+          suggestions.append({
+              "meal_id": meal.id,
+              "meal_name": meal.name,
+              "score": round(harmony_score),
+              "missing_ingredients": display_missing,
+              "explanation": f"Missing only {', '.join(display_missing)}. Add these to unlock!{history_explanation}"
+          })
 
     # Sort top meals by Harmony Score and take top 5
     meal_scores.sort(key=lambda x: x["score"], reverse=True)

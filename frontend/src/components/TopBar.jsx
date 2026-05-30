@@ -1,7 +1,7 @@
 // components/TopBar.jsx — App header bar matching Stitch design
-export default function TopBar() {
+export default function TopBar({ title, subtitle }) {
   return (
-    <header className="flex items-center justify-between px-5 py-3">
+    <header className="flex flex-col items-center justify-center px-5 py-4">
       <div className="flex items-center gap-2">
         <div className="w-8 h-8 rounded-full flex items-center justify-center"
              style={{ backgroundColor: "#56642b" }}>
@@ -9,16 +9,11 @@ export default function TopBar() {
             restaurant
           </span>
         </div>
-        <span className="text-base font-bold" style={{ color: "#1b1c18" }}>
+        <span className="text-lg font-black tracking-tight" style={{ color: "#1b1c18" }}>
           MealSync
         </span>
       </div>
-      <button className="w-9 h-9 rounded-full flex items-center justify-center"
-              style={{ backgroundColor: "#f0eee7" }}>
-        <span className="material-symbols-rounded" style={{ fontSize: 20, color: "#46483c" }}>
-          notifications
-        </span>
-      </button>
+      {subtitle && <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1.5">{subtitle}</p>}
     </header>
   );
 }

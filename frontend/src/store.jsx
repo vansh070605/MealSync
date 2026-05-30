@@ -11,6 +11,10 @@ export function StoreProvider({ children }) {
     mood: null,
   });
 
+  const [flatId, setFlatId] = useState(
+    parseInt(localStorage.getItem("flatId")) || 1
+  );
+
   const [recommendations, setRecommendations] = useState(null);
   const [fairnessWeights, setFairnessWeights]   = useState({});
   const [users, setUsers]                        = useState([]);
@@ -22,6 +26,11 @@ export function StoreProvider({ children }) {
   return (
     <Store.Provider value={{
       kitchenState, setKitchenState,
+      flatId,
+      setFlatId: (id) => {
+        localStorage.setItem("flatId", id);
+        setFlatId(id);
+      },
       recommendations, setRecommendations,
       fairnessWeights, setFairnessWeights,
       users, setUsers,

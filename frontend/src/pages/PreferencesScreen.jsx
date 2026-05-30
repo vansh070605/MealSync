@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import TopBar from "../components/TopBar";
-import { getUsers, updateUser } from "../api";
+import { getUsers, updateUser, deleteFlat, deleteUser } from "../api";
 import Loader from "../components/Loader";
+import { useStore } from "../store";
+import { useAuth } from "../context/AuthContext";
+import axios from "axios";
+import API_BASE_URL from "../apiConfig";
 
 const AVATAR_COLORS = ["#8a9a5b", "#ff9e68", "#d57881", "#bdce89", "#56642b", "#76786b"];
 
@@ -10,7 +15,7 @@ const TAG_SUGGESTIONS = [
   "Indian", "Asian", "Noodles", "Soup", "Potato", "Cheese"
 ];
 
-function UserCard({ user, index, onSave }) {
+function UserCard({ user, index, onSave, onDelete }) {
   const [expanded, setExpanded] = useState(false);
   const [form, setForm] = useState({
     name: user.name,
@@ -43,6 +48,12 @@ function UserCard({ user, index, onSave }) {
       }, 1500);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (window.confirm(`Are you sure you want to remove ${user.name} from the household?`)) {
+      await onDelete(user.id);
     }
   };
 
@@ -124,14 +135,23 @@ function UserCard({ user, index, onSave }) {
               </div>
             </div>
 
-            <button 
-              onClick={handleSave}
-              disabled={saving}
-              className="w-full h-12 bg-emerald-800 text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-emerald-100 active:scale-95 transition-transform"
-            >
-              {saving ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 
-               saved ? <span className="material-symbols-rounded">done</span> : "Save Changes"}
-            </button>
+            <div className="flex gap-3">
+              <button 
+                onClick={handleDelete}
+                disabled={saving}
+                className="w-12 h-12 bg-rose-50 text-rose-600 rounded-2xl font-bold flex items-center justify-center hover:bg-rose-100 transition-colors shrink-0"
+              >
+                <span className="material-symbols-rounded">delete</span>
+              </button>
+              <button 
+                onClick={handleSave}
+                disabled={saving}
+                className="flex-1 h-12 bg-emerald-800 text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-emerald-100 active:scale-95 transition-transform"
+              >
+                {saving ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 
+                saved ? <span className="material-symbols-rounded">done</span> : "Save Changes"}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -142,32 +162,124 @@ function UserCard({ user, index, onSave }) {
 export default function PreferencesScreen() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
+  const { flatId, setFlatId } = useStore();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
 
   const loadData = async () => {
     try {
-      const response = await getUsers();
-      setUsers(response.data);
+      const { data } = await getUsers(flatId);
+      setUsers(data);
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); }, [flatId]);
 
   const handleUpdateUser = async (id, payload) => {
-    await updateUser(id, payload);
+    await updateUser(flatId, id, payload);
     loadData();
   };
 
-  if (loading) return <Loader />;
+  const handleDeleteUser = async (id) => {
+    try {
+      await deleteUser(flatId, id);
+      loadData();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete user");
+    }
+  };
+
+  const handleDeleteHousehold = async () => {
+    if (!flatId) return;
+    if (!window.confirm("Are you sure you want to delete this household and all its profiles? This cannot be undone.")) return;
+    
+    setDeleting(true);
+    try {
+      await deleteFlat(flatId);
+      setFlatId(null);
+      navigate("/onboarding");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete household");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    if (window.confirm("Log out karna chahte ho?")) {
+      try {
+        await logout();
+        setFlatId(null);
+        navigate("/");
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
+
+  if (loading || deleting) return <Loader />;
 
   return (
     <div className="pb-24 animate-fade-in">
       <TopBar title="The Household" subtitle="Tailor the ML recommendations" />
-      <div className="px-5 mt-6 space-y-4">
+      
+      <div className="px-5 mt-6 flex gap-3">
+        <button 
+          onClick={() => navigate("/onboarding")}
+          className="flex-1 mb-6 h-14 border-2 border-dashed border-emerald-300 bg-emerald-50 text-emerald-800 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-emerald-100 transition-colors"
+        >
+          <span className="material-symbols-rounded">add_home</span>
+          Create New
+        </button>
+        {flatId && (
+          <button 
+            onClick={handleDeleteHousehold}
+            className="mb-6 h-14 px-6 border-2 border-dashed border-rose-300 bg-rose-50 text-rose-800 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-rose-100 transition-colors"
+          >
+            <span className="material-symbols-rounded">delete</span>
+            Delete
+          </button>
+        )}
+      </div>
+
+      {flatId && (
+        <div className="px-5 mb-6">
+          <button 
+            onClick={() => {
+              const link = `${window.location.origin}/invite?flatId=${flatId}`;
+              navigator.clipboard.writeText(link);
+              alert("Invite link copy ho gaya hai! Roommates ko send karein. 🔗\n" + link);
+            }}
+            className="w-full h-14 bg-emerald-850 text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg hover:bg-emerald-900 active:scale-95 transition-all"
+            style={{ backgroundColor: "#56642b" }}
+          >
+            <span className="material-symbols-rounded">share</span>
+            Gharwalon ko Invite karein (Copy Link)
+          </button>
+        </div>
+      )}
+
+      <div className="px-5 space-y-4 mb-8">
         {users.map((user, idx) => (
-          <UserCard key={user.id} user={user} index={idx} onSave={handleUpdateUser} />
+          <UserCard key={user.id} user={user} index={idx} onSave={handleUpdateUser} onDelete={handleDeleteUser} />
         ))}
+      </div>
+
+      <div className="px-5">
+        <button 
+          onClick={handleLogout}
+          className="w-full h-14 border-2 border-slate-350 text-slate-600 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-slate-100 transition-colors"
+        >
+          <span className="material-symbols-rounded">logout</span>
+          Logout Karein
+        </button>
       </div>
     </div>
   );

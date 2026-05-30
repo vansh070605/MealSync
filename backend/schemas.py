@@ -6,6 +6,18 @@ from typing import List, Optional
 from datetime import datetime
 
 
+# ── Flat ─────────────────────────────────────────────────────────────────────
+
+class FlatCreate(BaseModel):
+    name: str
+
+class FlatOut(BaseModel):
+    id: int
+    name: str
+    created_at: datetime
+    
+    model_config = {"from_attributes": True}
+
 # ── User ────────────────────────────────────────────────────────────────────
 
 class UserBase(BaseModel):
@@ -15,6 +27,7 @@ class UserBase(BaseModel):
     dislikes: List[str] = []
     spice_tolerance: int = Field(default=3, ge=1, le=5)
     effort_tolerance: str = "medium"   # low / medium / high
+    flat_id: Optional[int] = None
 
 
 class UserCreate(UserBase):
@@ -28,6 +41,7 @@ class UserUpdate(BaseModel):
     dislikes: Optional[List[str]] = None
     spice_tolerance: Optional[int] = Field(default=None, ge=1, le=5)
     effort_tolerance: Optional[str] = None
+    flat_id: Optional[int] = None
 
 
 class UserOut(UserBase):
@@ -44,6 +58,9 @@ class KitchenState(BaseModel):
     time_available: int = 60          # minutes
     budget_per_person: float = 10.0   # USD
     mood: Optional[str] = None        # light / heavy / quick / surprise
+    flat_id: Optional[str] = None     # The household requesting recommendations
+    users: List[dict] = []            # User profiles from Firebase
+    meal_history: List[dict] = []     # Historical meal ratings for feedback loop
 
 
 # ── Recommendation ───────────────────────────────────────────────────────────

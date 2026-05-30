@@ -10,16 +10,18 @@ import { getUsers, getHistory } from "../api";
 
 export default function Home() {
   const navigate = useNavigate();
-  const { users, setUsers } = useStore();
+  const { flatId, users, setUsers } = useStore();
   const { onlineCount } = usePresence();
   const [lastMeal, setLastMeal] = useState(null);
 
   useEffect(() => {
-    getUsers().then((r) => setUsers(r.data)).catch(() => {});
-    getHistory(1).then((r) => {
-      if (r.data.length > 0) setLastMeal(r.data[0]);
-    }).catch(() => {});
-  }, []);
+    if (flatId) {
+      getUsers(flatId).then((r) => setUsers(r.data)).catch(() => {});
+      getHistory(flatId).then((r) => {
+        if (r.data.length > 0) setLastMeal(r.data[0]);
+      }).catch(() => {});
+    }
+  }, [flatId]);
 
   return (
     <div className="flex flex-col min-h-screen pb-24" style={{ backgroundColor: "#fbf9f2" }}>

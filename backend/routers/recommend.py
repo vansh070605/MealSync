@@ -14,7 +14,9 @@ def recommend(kitchen_state: KitchenState, db: Session = Depends(get_db)):
         available_ingredients=kitchen_state.available_ingredients,
         max_prep_time=kitchen_state.time_available,
         budget_tier=int(kitchen_state.budget_per_person / 5) or 1,
-        mood=kitchen_state.mood
+        mood=kitchen_state.mood,
+        users=kitchen_state.users,
+        meal_history=kitchen_state.meal_history
     )
     
     top_meals = []
@@ -42,56 +44,3 @@ def recommend(kitchen_state: KitchenState, db: Session = Depends(get_db)):
         fairness_weights={},
         suggestions=suggestions
     )
-
-
-@router.get("/history")
-def get_history(limit: int = 20, db: Session = Depends(get_db)):
-    # Corrected attribute: selected_at
-    history = db.query(MealHistory).order_by(MealHistory.selected_at.desc()).limit(limit).all()
-    results = []
-    for h in history:
-        meal = db.query(Meal).filter(Meal.id == h.meal_id).first()
-        sats = db.query(Satisfaction).filter(Satisfaction.history_id == h.id).all()
-        
-        sat_list = []
-        for s in sats:
-            u = db.query(User).filter(User.id == s.user_id).first()
-            if u:
-                sat_list.append({"user_name": u.name, "score": s.score})
-
-        results.append({
-            "meal_name": meal.name if meal else "Special Group Meal",
-            "timestamp": h.selected_at,
-            "notes": h.notes,
-            "satisfactions": sat_list
-        })
-    return results
-
-@router.post("/history", status_code=201)
-def select_meal(body: SelectMealRequest, db: Session = Depends(get_db)):
-    meal = db.query(Meal).filter(Meal.id == body.meal_id).first()
-    
-    # MealHistory uses 'selected_at' automatically
-    history_entry = MealHistory(meal_id=body.meal_id, notes=body.notes or "")
-    db.add(history_entry)
-    db.flush()
-
-    if body.satisfaction_scores:
-        for user_name, score in body.satisfaction_scores.items():
-            user = db.query(User).filter(User.name.ilike(user_name)).first()
-            if user:
-                db.add(Satisfaction(
-                    user_id=user.id, 
-                    history_id=history_entry.id, 
-                    score=float(score)/100.0
-                ))
-    
-    db.commit()
-    return {"status": "ok", "history_id": history_entry.id}
-
-@router.delete("/history")
-def clear_history(db: Session = Depends(get_db)):
-    db.query(Satisfaction).delete()
-    db.query(MealHistory).delete()
-    db.commit()
-    return {"status": "history cleared"}
