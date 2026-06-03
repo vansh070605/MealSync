@@ -10,12 +10,30 @@ from seed_data import seed
 import uvicorn
 
 # Initialize Database
-Base.metadata.create_all(bind=engine)
-db = SessionLocal()
 try:
-    seed(db)
-finally:
-    db.close()
+    Base.metadata.create_all(bind=engine)
+    db = SessionLocal()
+    try:
+        seed(db)
+    finally:
+        db.close()
+except Exception as e:
+    import traceback
+    print("Database initialization or seeding failed. Stack trace:")
+    traceback.print_exc()
+    print("Attempting to recreate database tables to resolve schema mismatch...")
+    try:
+        Base.metadata.drop_all(bind=engine)
+        Base.metadata.create_all(bind=engine)
+        db = SessionLocal()
+        try:
+            seed(db)
+        finally:
+            db.close()
+        print("Database tables recreated and seeded successfully!")
+    except Exception as recreate_err:
+        print(f"Failed to recreate database: {recreate_err}")
+        raise recreate_err
 
 app = FastAPI(
     title="MealSync API",

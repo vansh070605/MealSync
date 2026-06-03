@@ -23,6 +23,18 @@ def init():
             return
         except Exception as e:
             print(f"⚠️ Attempt {i+1} failed: {e}")
+            # If it's a database schema/column mismatch error, attempt to recreate tables
+            if "UndefinedColumn" in str(e) or "column" in str(e) or "ProgrammingError" in str(type(e)):
+                print("Detected schema mismatch. Attempting to recreate database tables...")
+                try:
+                    Base.metadata.drop_all(bind=engine)
+                    Base.metadata.create_all(bind=engine)
+                    with SessionLocal() as db:
+                        seed(db)
+                    print("✅ Database recreated and initialized successfully!")
+                    return
+                except Exception as recreate_err:
+                    print(f"⚠️ Failed to recreate database on attempt {i+1}: {recreate_err}")
             time.sleep(2)
             
     print("❌ Could not initialize database.")
