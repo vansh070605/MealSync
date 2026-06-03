@@ -3,14 +3,14 @@ import { getDatabase } from "firebase/database";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDW-fDV2wXKUJFH3m-iri7nQwAtyqagQ3Q",
-  authDomain: "mealsync-7ddce.firebaseapp.com",
-  databaseURL: "https://mealsync-7ddce-default-rtdb.firebaseio.com",
-  projectId: "mealsync-7ddce",
-  storageBucket: "mealsync-7ddce.firebasestorage.app",
-  messagingSenderId: "1045059329723",
-  appId: "1:1045059329723:web:93aa8a9351ea6f9cabd39e",
-  measurementId: "G-6CP48B2C1Z"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 export const app = initializeApp(firebaseConfig);
