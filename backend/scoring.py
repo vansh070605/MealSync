@@ -118,18 +118,22 @@ def get_recommendations(db: Session, available_ingredients: list, max_prep_time:
         for user in users:
             score = 70 # Start with a neutral high base
             
-            # Boost if they like ingredients
+            # Extract meal tags
+            meal_tags_normalized = [t.lower() for t in meal.tags]
+            meal_features = meal_ingredients_normalized + meal_tags_normalized
+            
+            # Boost if they like ingredients or tags (e.g. "veg", "spicy")
             user_likes = {l.lower() for l in user.get("likes", [])}
-            if any(ing in user_likes for ing in meal_ingredients_normalized):
+            if any(item in user_likes for item in meal_features):
                 score += 15
             
-            # Penalize if they dislike ingredients
+            # Penalize if they dislike ingredients or tags
             user_dislikes = {d.lower() for d in user.get("dislikes", [])}
-            if any(ing in user_dislikes for ing in meal_ingredients_normalized):
+            if any(item in user_dislikes for item in meal_features):
                 score -= 40
             
             # Spice Preference
-            spice_diff = abs(meal.prep_time % 5 - user.get("spice_tolerance", 3))
+            spice_diff = abs(meal.spice_level - user.get("spice_tolerance", 3))
             score -= (spice_diff * 5)
             
             user_scores.append(max(0, min(100, score)))

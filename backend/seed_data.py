@@ -23,7 +23,7 @@ def seed(db: Session) -> None:
         db.add(demo_flat)
         db.commit()
         db.refresh(demo_flat)
-        print("✅ Seeded Demo Flat.")
+        print("[SUCCESS] Seeded Demo Flat.")
     else:
         demo_flat = db.query(Flat).first()
 
@@ -34,10 +34,13 @@ def seed(db: Session) -> None:
             user.dislikes = u["dislikes"]
             db.add(user)
         db.commit()
-        print("✅ Seeded 6 users.")
+        print("[SUCCESS] Seeded 6 users.")
 
     if db.query(Meal).count() == 0:
-        df = pd.read_csv('food_data.csv')
+        import os
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        csv_path = os.path.join(base_dir, 'food_data.csv')
+        df = pd.read_csv(csv_path)
         for _, row in df.iterrows():
             tags = ["spicy"] if row['spice_level'] >= 3 else []
             if row['is_veg'] == 1: tags.append("veg")
@@ -46,6 +49,7 @@ def seed(db: Session) -> None:
                 name=row['name'],
                 description=f"A delicious {row['name']} prepared with {row['main_ingredients']}.",
                 prep_time=int(row['prep_time_mins']),
+                spice_level=int(row['spice_level']),
                 cost_estimate=float(row['budget_tier']) * 3.5,
                 cuisine="Indian" if "Outlier" not in str(row['name']) else "Special"
             )
@@ -53,4 +57,4 @@ def seed(db: Session) -> None:
             meal.tags = tags
             db.add(meal)
         db.commit()
-        print(f"✅ Seeded {len(df)} meals from CSV.")
+        print(f"[SUCCESS] Seeded {len(df)} meals from CSV.")

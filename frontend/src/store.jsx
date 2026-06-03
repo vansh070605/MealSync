@@ -12,7 +12,7 @@ export function StoreProvider({ children }) {
   });
 
   const [flatId, setFlatId] = useState(
-    parseInt(localStorage.getItem("flatId")) || 1
+    localStorage.getItem("flatId") || ""
   );
 
   const [recommendations, setRecommendations] = useState(null);

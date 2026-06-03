@@ -59,6 +59,7 @@ class Meal(Base):
     description = Column(Text, default="")
     ingredients_json = Column(Text, default="[]")  # JSON list of strings
     prep_time = Column(Integer, default=30)         # minutes
+    spice_level = Column(Integer, default=3)        # 1–5
     difficulty = Column(String(10), default="medium")  # easy/medium/hard
     tags_json = Column(Text, default="[]")          # JSON list: spicy, veg, quick, ...
     cost_estimate = Column(Float, default=5.0)       # USD per person
