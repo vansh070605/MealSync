@@ -21,8 +21,8 @@ function UserCard({ user, index, onSave, onDelete }) {
     name: user.name,
     spice_tolerance: user.spice_tolerance,
     effort_tolerance: user.effort_tolerance,
-    likes: [...user.likes],
-    dislikes: [...user.dislikes],
+    likes: [...(user.likes || [])],
+    dislikes: [...(user.dislikes || [])],
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved]   = useState(false);
